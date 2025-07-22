@@ -3,52 +3,93 @@ note: this is just an initial thought about how the projects' structure nothing 
 this is how the project is PROBABBLY gonna be structured:
 
 webserv/
-├── Makefile               # Build script
-├── include/               # Header files
-│   ├── server/            # Server core headers
-│   │   ├── Server.hpp
-│   │   ├── Connection.hpp
-│   │   └── EventLoop.hpp
-│   ├── config/            # Configuration parsing
-│   │   ├── ConfigParser.hpp
-│   │   ├── ServerConfig.hpp
-│   │   └── RouteConfig.hpp
-│   ├── http/              # HTTP protocol handling
-│   │   ├── Request.hpp
-│   │   ├── Response.hpp
-│   │   └── StatusCodes.hpp
-│   ├── cgi/               # CGI execution
-│   │   └── CGIHandler.hpp
-│   └── utils/             # Utilities
-│       ├── Logger.hpp
-│       ├── FileUtils.hpp
-│       ├── SharedPtr.hpp  # To make our life easier
-│       └── URI.hpp
-├── src/                   # Source files
+├── Makefile                      # C++98 build with -Wall -Wextra -Werror
+├── include/
 │   ├── server/
-│   │   ├── Server.cpp
-│   │   ├── Connection.cpp
-│   │   └── EventLoop.cpp
+│   │   ├── Server.hpp            # Main server class (handles multiple ports)
+│   │   ├── Connection.hpp        # Client connection state (non-blocking I/O)
+│   │   ├── EventLoop.hpp         # epoll implementation (since Linux)
+│   │   └── IMultiplexer.hpp      # Abstract I/O multiplexing interface
 │   ├── config/
-│   │   ├── ConfigParser.cpp
-│   │   ├── ServerConfig.cpp
-│   │   └── RouteConfig.cpp
+│   │   ├── ConfigParser.hpp      # Recursive descent parser for config
+│   │   ├── ServerConfig.hpp      # Server block (host/port/error_pages)
+│   │   ├── RouteConfig.hpp       # Location block (methods/redir/CGI)
+│   │   └── Directive.hpp         # Tokenized config directives
 │   ├── http/
-│   │   ├── Request.cpp
-│   │   ├── Response.cpp
-│   │   └── StatusCodes.cpp
+│   │   ├── Request.hpp           # HTTP request parsing (chunked support)
+│   │   ├── Response.hpp          # HTTP response generation
+│   │   ├── StatusCodes.hpp       # HTTP status codes (RFC-compliant)
+│   │   ├── MimeTypes.hpp         # Content-Type mappings
+│   │   └── UploadHandler.hpp     # File upload processing
 │   ├── cgi/
-│   │   └── CGIHandler.cpp
-│   └── utils/
-│       ├── Logger.cpp
-│       ├── FileUtils.cpp
-│       └── URI.cpp
-├── test/                  # Tests and tools
-│   ├── test_configs/      # Sample config files
-│   ├── stress_tests/      # Load-testing scripts
-│   └── browser_tests/     # HTML/JS files for browser testing
-├── configs/               # Default configurations
-│   ├── default.conf       # Example config file
-│   └── error_pages/       # Default error pages (404.html, 500.html, etc.)
-└── docs/                  # Documentation (optional)
-    └── DESIGN.md          # Architecture overview
+│   │   ├── CGIHandler.hpp        # CGI execution (with timeout)
+│   │   ├── CGIEnvironment.hpp    # Environment variable setup
+│   │   └── CGIRunner.hpp         # Bonus: Multiple CGI dispatcher
+│   ├── utils/
+│   │   ├── Logger.hpp            # Thread-safe logging
+│   │   ├── FileUtils.hpp         # File operations (dir listing, sanitization)
+│   │   ├── StringUtils.hpp       # String manipulation (trim/split)
+│   │   ├── URI.hpp               # URI parsing and normalization
+│   │   ├── SocketUtils.hpp       # Socket helper functions
+│   │   └── MemoryUtils.hpp       # Custom allocator (for stability)
+│   └── bonus/                    # Bonus features
+│       ├── session/
+│       │   ├── SessionManager.hpp # Cookie/session storage
+│       │   └── Session.hpp        # Session data model
+│       └── auth/                  # Auth extensions (if implemented)
+├── src/
+│   ├── main.cpp                  # Entry point (config loading)
+│   ├── server/
+│   │   ├── Server.cpp            # Server initialization
+│   │   ├── Connection.cpp        # I/O handling (epoll-ready only)
+│   │   └── EventLoop.cpp         # epoll event processing
+│   ├── config/
+│   │   ├── ConfigParser.cpp      # Syntax tree construction
+│   │   ├── ServerConfig.cpp      # Server block validation
+│   │   └── RouteConfig.cpp       # Route rule processing
+│   ├── http/
+│   │   ├── Request.cpp           # Request parsing (with chunk decode)
+│   │   ├── Response.cpp          # Response building (autoindex/CGI)
+│   │   └── UploadHandler.cpp     # File upload handling
+│   ├── cgi/
+│   │   ├── CGIHandler.cpp        # CGI execution (non-blocking pipes)
+│   │   └── CGIEnvironment.cpp    # RFC-compliant env setup
+│   ├── utils/
+│   │   ├── Logger.cpp            # Timestamped logging
+│   │   ├── FileUtils.cpp         # Path traversal prevention
+│   │   └── URI.cpp               # URI decoding/encoding
+│   └── bonus/
+│       ├── session/
+│       │   ├── SessionManager.cpp# Cookie persistence
+│       │   └── Session.cpp       # Session expiration
+│       └── cgi/CGIRunner.cpp     # Bonus: Multi-CGI handler
+├── test/
+│   ├── test_configs/             # Config test cases
+│   │   ├── invalid/
+│   │   ├── multi_server.conf
+│   │   └── upload_route.conf
+│   ├── stress_tests/             # Load testing
+│   │   ├── siege_benchmark.sh
+│   │   └── wrk_scripts/
+│   ├── browser_tests/            # Frontend tests
+│   │   ├── file_upload.html
+│   │   └── session_test.html     # Bonus test
+│   ├── unit_tests/               # Component tests
+│   │   ├── test_ConfigParser.cpp
+│   │   └── test_Request.cpp
+│   └── cgi_scripts/              # CGI test binaries
+│       ├── test.py
+│       ├── test.php
+│       └── upload_handler.pl      # Bonus: Multi-CGI test
+├── configs/
+│   ├── default.conf              # Reference config
+│   ├── mime.types                # Official IANA types
+│   └── error_pages/
+│       ├── 400.html
+│       ├── 403.html
+│       ├── 404.html
+│       └── 500.html
+└── docs/
+    ├── DESIGN.md                 # Architecture decisions
+    ├── EPROTOCOL.md              # epoll workflow
+    └── BONUS.md                  # Session/CGI bonus docs
