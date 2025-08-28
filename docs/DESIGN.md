@@ -12,6 +12,7 @@ webserv/
 │   │   └── EventLoop.hpp
 │   ├── config/            # Configuration parsing
 │   │   ├── ConfigParser.hpp
+│   │   ├── GlobalConfig.hpp
 │   │   ├── ServerConfig.hpp
 │   │   └── RouteConfig.hpp
 │   ├── http/              # HTTP protocol handling
