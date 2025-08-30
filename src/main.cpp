@@ -1,31 +1,51 @@
-#include "Logger.hpp"
+#include <iostream>
+#include "lexer.hpp"
 
-int main()
+std::string getType(token_types_t type)
 {
-    Logger console;
-
-    try
+    switch (type)
     {
-        Logger file("file");
-        file.info("this is a test log message");
-        file.error("this is a test log message");
-        file.warning("this is a test log message");
-        file.debug("this is a test log message");
-        file.success("this is a test log message");
+    case TKN_WORD:
+        return "TKN_WORD";
+     case TKN_SEMCLN:
+        return "TKN_SEMCLN";
+     case TKN_COMMA:
+        return "TKN_COMMA";
+     case TKN_LCBRAC:
+        return "TKN_LCBRAC";
+     case TKN_RCBRAC:
+        return "TKN_RCBRAC";
+     case TKN_TILDA:
+        return "TKN_TILDA";
+     case TKN_QUOTED:
+        return "TKN_QUOTED";
+     case TKN_EOF:
+        return "TKN_EOF";
     }
-    catch(const std::exception& e)
+    return "UNKNOWN";
+}
+
+int main(int ac, char **av)
+{
+    if (ac != 2)
     {
-        console.error(e.what());
+        std::cerr << "usage: ./webserv [CONFIG]" << std::endl;
+        return 1;
     }
 
-    console.info("this is a test log message");
-    console.error("this is a test log message");
-    console.warning("this is a test log message");
-    console.debug("this is a test log message");
-    console.success("this is a test log message");
+    lexer conf(av[1]);
+    token_t tkn;
 
-    console.custom("something strange", "helo world", 0x0);
-    std::cout << console.getCustomLine("tag", "hdflaklfda", 0xffff00) << std::endl;
+    // int count = 1;
+    while ((tkn = conf.getNextToken()).type != TKN_EOF)
+    {
+        std::cout << getType(tkn.type) << " ";
+        std::cout << "[" << tkn.value << "] -> ";
+        std::cout << conf.getCurrLine() << ":" << conf.getCurrColm();
+        std::cout << std::endl;
+        // if (count == 11) break;
+        // count++;
+    }
 
     return 0;
 }
