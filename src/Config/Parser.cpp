@@ -58,9 +58,10 @@ directive_t Parser::_parseDirective()
     }
 
     if (tkn.type == TKN_EOF)
-    {
-        throw ParserError("unexpteced EOF in directive '" + dir.name + "' - (missing ';' or '{')", _file.getCurrLine(), _file.getCurrColm());
-    }
+        throw ParserError("unexpteced EOF in directive '"
+            + dir.name
+            + "' - (missing ';' or '{')",
+             _file.getCurrLine(), _file.getCurrColm());
 
     if (tkn.type == TKN_LCBRAC)
     {
