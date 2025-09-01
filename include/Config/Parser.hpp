@@ -6,14 +6,30 @@
 
 struct directive_t
 {
-    std::string name;
-    union value_t
-    {
-        std::string arg;
-        std::vector<std::string> args;
-        std::vector<directive_t> chidlren;
-    } value;
+    std::string              name;
+    std::vector<std::string> args;
+    bool                     is_block;
+    std::vector<directive_t> children;
 };
 
+class Parser
+{
+    // lazy lexer
+    lexer       _file;
+    directive_t _parseDirective();
+
+    class ParserError: public std::exception
+    {
+        std::string     _error;
+    public:
+        ParserError(const std::string& msg, unsigned int line, unsigned int colm);
+        ~ParserError() throw();
+        const char* what() const throw();
+    };
+
+public:
+    Parser(const std::string& filename);
+    directive_t buildTree(void);
+};
 
 #endif

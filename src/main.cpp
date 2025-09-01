@@ -1,49 +1,64 @@
 #include <iostream>
-#include "lexer.hpp"
+#include "Parser.hpp"
+#include "Logger.hpp"
 
-std::string getType(token_types_t type)
-{
-    switch (type)
-    {
-    case TKN_WORD:
-        return "TKN_WORD";
-    case TKN_SEMCLN:
-        return "TKN_SEMCLN";
-    case TKN_COMMA:
-        return "TKN_COMMA";
-    case TKN_LCBRAC:
-        return "TKN_LCBRAC";
-    case TKN_RCBRAC:
-        return "TKN_RCBRAC";
-    case TKN_TILDA:
-        return "TKN_TILDA";
-    case TKN_QUOTED:
-        return "TKN_QUOTED";
-    case TKN_EOF:
-        return "TKN_EOF";
+void print_indent(int indent) {
+    for (int i = 0; i < indent; ++i) {
+        std::cout << "  ";
     }
-    return "UNKNOWN";
 }
 
+void print_directive(const directive_t& d, int indent = 0) {
+    // Print directive name
+    print_indent(indent);
+    std::cout << '"' << d.name << "\": ";
+    
+    // Print arguments if they exist
+    if (!d.args.empty()) {
+        std::cout << " [";
+        for (size_t i = 0; i < d.args.size(); ++i) {
+            std::cout << '"' << d.args[i] << '"';
+            if (i < d.args.size() - 1)
+                std::cout << ", ";
+        }
+        std::cout << "]";
+    }
+    
+    // Handle block directives
+    if (d.is_block && d.children.size()) {
+        if (!d.args.empty()) {
+            std::cout << "\n";
+            print_indent(indent);
+        }
+        std::cout << " {\n";
+        
+        // Print children with increased indentation
+        for (size_t i = 0; i < d.children.size(); ++i) {
+            print_directive(d.children[i], indent + 2);
+        }
+        
+        print_indent(indent);
+        std::cout << " }";
+    }
+    
+    std::cout << "\n";
+}
 int main(int ac, char **av)
 {
+    (void)av;
     if (ac != 2)
     {
         std::cerr << "usage: ./webserv [CONFIG]" << std::endl;
         return 1;
     }
 
-    lexer conf(av[1]);
-    token_t tkn;
+    Logger console;
+    try {
 
-    int indent = 0;
-    while ((tkn = conf.getNextToken()).type != TKN_EOF)
-    {
-        if (tkn.type == TKN_RCBRAC) indent -= 4;
-        for (int i = 0; i < indent; ++i) std::cout << ' ';
-        std::cout << getType(tkn.type) << ": " << tkn.value << std::endl;
-        if (tkn.type == TKN_LCBRAC) indent += 4;
+        Parser config(av[1]);
+        print_directive(config.buildTree(), 0);
+    } catch (const std::exception& e) {
+        console.error(e.what());
     }
-
     return 0;
 }
