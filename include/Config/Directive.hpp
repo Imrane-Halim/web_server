@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include <map>
 
 enum context_t
 {
@@ -20,6 +21,7 @@ struct directive_t
     std::vector<directive_t> children;
     uint32_t                 line;
     uint32_t                 colm;
+    context_t                ctx;
 };
 
 // class IDirective
