@@ -13,6 +13,18 @@ enum context_t
     CTX_LOCATION = (1 << 2)
 };
 
+enum arg_type_t
+{
+    ARG_NAN  = (1 << 0),
+    ARG_STR  = (1 << 1),
+    ARG_INT  = (1 << 2),
+    ARG_BOOL = (1 << 3),
+    ARG_ANY  = (1 << 4),
+    ARG_HOST = (1 << 5),
+    ARG_PATH = (1 << 7),
+    ARG_METHODS = (1 << 6)
+};
+
 struct directive_t
 {
     std::string              name;

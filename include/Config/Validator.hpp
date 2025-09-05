@@ -1,8 +1,12 @@
 #ifndef WEBSERV_VALIDATOR_HPP
 #define WEBSERV_VALIDATOR_HPP
 
+#include <arpa/inet.h>
+#include <cstdlib>
 #include "Directive.hpp"
 #include "Error.hpp"
+
+#define MAX_TYPES 2
 
 /**
  * @brief Validates the syntax and context of directives.
@@ -23,6 +27,7 @@ class Validator
         uint8_t allowed_context; /**< Allowed contexts for the directive. */
         int8_t  min_args;        /**< Minimum number of arguments required. */
         int8_t  max_args;        /**< Maximum number of arguments allowed. */
+        arg_type_t type[MAX_TYPES];
     };
 
     std::map<std::string, rule_t> _rules; /**< Map of directive names to their validation rules. */
@@ -34,6 +39,16 @@ class Validator
      * @param allowed The context in which the directive is used.
      */
     void _isValidInContext(directive_t& dir, uint8_t allowed);
+
+    /**
+    * @brief validate type of arg
+    * @param s arg
+    **/
+    bool _isInt(const std::string& s);
+    bool _isBool(const std::string& s);
+    bool _isHost(const std::string& s);
+    bool _isPath(const std::string& s);
+    bool _isMethod(const std::string& s);
 
     /**
      * @brief Checks if a directive has a valid number of arguments.
