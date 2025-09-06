@@ -1,56 +1,49 @@
 #ifndef WEBSERV_PARSER_HPP
 #define WEBSERV_PARSER_HPP
 
-#include "Directive.hpp"
+#include <map>
+#include <set>
+#include <vector>
+#include <sstream>
 #include "lexer.hpp"
-#include "Validator.hpp"
-#include "Error.hpp"
 
-/**
- * @brief Parses a source file into a series of directives.
- *
- * This class is responsible for reading a source file, analyzing its content,
- * and converting it into a structured representation of directives.
- */
+// dir: {args, ...}
+typedef std::pair<std::string, std::vector<std::string> > directive;
+
+// a map of directives
+typedef std::map<std::string, std::vector<std::string> > directives;
+
+// location consist only of "dir: {args, ...}" directives
+typedef directives locationConf;
+
+// server consist only of simple directives (key:value) and block
+// directives (locationConf) so if a simple directive is required
+// i only look up the 'first' key in the pair
+// if a server is required i look up the 'second' key
+typedef std::pair<directives, std::vector<locationConf> > serverConf; 
+
+// a list of servers configs
+// this can be turned into a pair of directive and vector in
+// order to support global directives
+typedef std::vector<serverConf> Config;
+
 class Parser
 {
-    lexer       _file;        /**< The lexer instance for tokenizing the input file. */
-    Validator   _grammar;     /**< The grammar validator for checking directive syntax. */
-    int         _nestDepth;   /**< The current nesting depth of directives. */
-    context_t   _currCtx;     /**< The current parsing context. */
-
-    /**
-     * @brief Parses the arguments of a directive.
-     * @param dir The directive whose arguments are to be parsed.
-     * @return The parsed arguments as a token.
-     */
-    token_t _parseArgs(directive_t& dir);
-
-    /**
-     * @brief Parses a block-level directive.
-     * @param dir The directive to be parsed.
-     * @return The parsed directive.
-     */
-    directive_t _parseBlock(directive_t& dir);
-
-    /**
-     * @brief Parses a single directive.
-     * @return The parsed directive.
-     */
-    directive_t _parseDirective();
-
+    class ParseError: public std::exception
+    {
+        std::string _err;
+    public:
+        ParseError(const std::string& msg, uint32_t line, uint32_t colm);
+        ~ParseError() throw();
+        const char* what() const throw();
+    };
+    
+    static directive    _parseDirective(const std::string& key, lexer& file);
+    static locationConf _parseLocation(lexer& file);
+    static serverConf   _parseServer(lexer& file);
+    
 public:
-    /**
-     * @brief Constructs a Parser for a given file.
-     * @param filename The name of the file to be parsed.
-     */
-    Parser(const std::string& filename);
-
-    /**
-     * @brief Parses the entire file into directives.
-     * @return The top-level directive representing the parsed content.
-     */
-    directive_t parse();
+    static Config parse(const std::string& filename);
 };
 
 #endif

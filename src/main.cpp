@@ -2,50 +2,44 @@
 #include "Logger.hpp"
 #include "Parser.hpp"
 
-void print_indent(int indent) {
-    for (int i = 0; i < indent; ++i) {
-        std::cout << "  ";
-    }}
+// print simple directives
+void    print_simple(directives simple, int indent = 4)
+{
+    directives::iterator it;
 
-void print_directive(const directive_t& d, int indent = 0) {
-    // Print directive name
-    print_indent(indent);
-    std::cout << '"' << d.name << "\": ";
-    
-    // Print arguments if they exist
-    if (!d.args.empty()) {
-        std::cout << " [";
-        for (size_t i = 0; i < d.args.size(); ++i) {
-            std::cout << '"' << d.args[i] << '"';
-            if (i < d.args.size() - 1)
-                std::cout << ", ";
-        }
-        std::cout << "]";
+    for (it = simple.begin(); it != simple.end(); ++it)
+    {
+        for (int i = 0; i < indent; ++i) std::cout << " ";
+        std::cout << it->first << ": ";
+        for (size_t j = 0; j < it->second.size(); ++j) 
+            std::cout << it->second[j] << " ";
+        std::cout << std::endl;
     }
-    
-    // Handle block directives
-    if (d.is_block && d.children.size()) {
-        if (!d.args.empty()) {
-            std::cout << "\n";
-            print_indent(indent);
-        }
-        std::cout << " {\n";
-        
-        // Print children with increased indentation
-        for (size_t i = 0; i < d.children.size(); ++i) {
-            print_directive(d.children[i], indent + 2);
-        }
-        
-        print_indent(indent);
-        std::cout << " }";
+}
+
+void    print_block(std::vector<locationConf> lc)
+{
+    for (size_t i = 0; i < lc.size(); ++i)
+    {
+        std::cout << "    location: {\n";
+        print_simple(lc[i], 4 * 2);
+        std::cout << "    }\n";
     }
-    
-    std::cout << "\n";
+}
+
+void    print_conf(Config cnf)
+{
+    for (size_t i = 0; i < cnf.size(); ++i)
+    {
+        std::cout << "server: {\n";
+        print_simple(cnf[i].first);
+        print_block(cnf[i].second);
+        std::cout << "}\n";
+    }
 }
 
 int main(int ac, char **av)
 {
-    (void)av;
     if (ac != 2)
     {
         std::cerr << "usage: ./webserv [CONFIG]" << std::endl;
@@ -54,9 +48,8 @@ int main(int ac, char **av)
 
     Logger console;
     try {
-
-        Parser config(av[1]);
-        print_directive(config.parse(), 0);
+        Config cnf = Parser::parse(av[1]);
+        print_conf(cnf);
     } catch (const std::exception& e) {
         console.error(e.what());
     }
