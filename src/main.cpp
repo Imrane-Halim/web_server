@@ -1,57 +1,43 @@
 #include <iostream>
+#include <cstdlib>
 #include "Logger.hpp"
-#include "Parser.hpp"
+#include "HTTPMessage.hpp"
 
-// print simple directives
-void    print_simple(directives simple, int indent = 4)
+void print_msg(HTTPMessage& msg)
 {
-    directives::iterator it;
-
-    for (it = simple.begin(); it != simple.end(); ++it)
-    {
-        for (int i = 0; i < indent; ++i) std::cout << " ";
-        std::cout << it->first << ": ";
-        for (size_t j = 0; j < it->second.size(); ++j) 
-            std::cout << it->second[j] << " ";
-        std::cout << std::endl;
-    }
+    for (size_t i = 0; i < msg.startLine.size(); ++i)
+    std::cout << msg.startLine[i] << "..";
+    std::cout << std::endl << std::endl;
+    for (strmap::iterator it = msg.headers.begin(); it != msg.headers.end(); ++it)
+        std::cout << it->first << " : " << it->second << std::endl;
+    std::cout << std::endl;;
+    std::cout << msg.body << std::endl;
 }
 
-void    print_block(std::vector<locationConf> lc)
-{
-    for (size_t i = 0; i < lc.size(); ++i)
-    {
-        std::cout << "    location: {\n";
-        print_simple(lc[i], 4 * 2);
-        std::cout << "    }\n";
-    }
-}
-
-void    print_conf(Config cnf)
-{
-    for (size_t i = 0; i < cnf.size(); ++i)
-    {
-        std::cout << "server: {\n";
-        print_simple(cnf[i].first);
-        print_block(cnf[i].second);
-        std::cout << "}\n";
-    }
-}
-
-int main(int ac, char **av)
+int main(const int ac, const char **av, const char **env)
 {
     if (ac != 2)
     {
         std::cerr << "usage: ./webserv [CONFIG]" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
+    (void)av; (void)env;
+    try
+    {
+        HTTPMessage req = HTTPMessageParser::parse("GET /path HTTP/1.1\r\nHost: example.com\r\nAccept: */*\r\nConnection: close\r\n\r\n");
+        HTTPMessage res = HTTPMessageParser::parse("HTTP/1.1 200 ok\r\ncontent: something\r\nconnection: smth\r\n\r\nthis is a body");
 
-    Logger console;
-    try {
-        Config cnf = Parser::parse(av[1]);
-        print_conf(cnf);
-    } catch (const std::exception& e) {
-        console.error(e.what());
+        std::cout << "request:\n";
+        print_msg(req);
+
+        std::cout << "response:\n";
+        print_msg(res);
+
+        
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
     }
 
     return 0;

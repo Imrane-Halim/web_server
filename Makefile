@@ -7,20 +7,19 @@ OBJ_DIR = .objects
 # base flags
 # the MMD flag is used to track changes in header files
 CXXFLAGS =  -Wall -Wextra -Werror -std=c++98 -MMD
-CXXFLAGS += -I$(INC_DIR)/utils -I$(INC_DIR)/Config -g3
+CXXFLAGS += -I$(INC_DIR)/utils -I$(INC_DIR)/Config -I$(INC_DIR)/http -g3
 
 # project files.
 # todo: remove the wildcard functions
 MAIN = src/main.cpp
 PARSING = $(wildcard src/Config/*.cpp)
+HTTP = $(wildcard src/http/*.cpp)
 UTILS = $(wildcard src/utils/*.cpp)
 
 
-SRC = $(MAIN) $(UTILS) $(PARSING)
+SRC = $(MAIN) $(UTILS) $(PARSING) $(HTTP)
 OBJ = $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
-# track header files too
--include $(OBJ:.o=.d)
 
 all: $(NAME)
 
@@ -38,6 +37,9 @@ fclean: clean
 	rm -rf $(NAME)
 
 re: fclean all
+
+# track dependancies
+-include $(OBJ:.o=.d)
 
 .PHONY: all clean fclean re
 .SECONDARY: $(OBJ)
