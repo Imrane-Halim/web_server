@@ -1,43 +1,68 @@
+#include "Response.hpp"
 #include <iostream>
-#include <cstdlib>
-#include "Logger.hpp"
-#include "HTTPMessage.hpp"
+#include <fstream>
 
-void print_msg(HTTPMessage& msg)
-{
-    for (size_t i = 0; i < msg.startLine.size(); ++i)
-    std::cout << msg.startLine[i] << "..";
-    std::cout << std::endl << std::endl;
-    for (strmap::iterator it = msg.headers.begin(); it != msg.headers.end(); ++it)
-        std::cout << it->first << " : " << it->second << std::endl;
-    std::cout << std::endl;;
-    std::cout << msg.body << std::endl;
+// Utility: dump data as string, useful for testing
+void dumpResponse(HTTPResponse& resp) {
+    char buffer[20];
+    while (!resp.isComplete()) {
+        ssize_t bytes = resp.readNextChunk(buffer, sizeof(buffer));
+        if (bytes < 0) {
+            std::cerr << "Error reading response: " << strerror(errno) << "\n";
+            break;
+        }
+        std::cout.write(buffer, bytes);
+    }
+    std::cout.flush();
 }
 
-int main(const int ac, const char **av, const char **env)
-{
-    if (ac != 2)
+int main() {
+    // ---- Test 1: Small body response ----
     {
-        std::cerr << "usage: ./webserv [CONFIG]" << std::endl;
-        return EXIT_FAILURE;
+        std::cout << "=== Small Body Response ===\n";
+
+        HTTPResponse resp(200, "OK");
+        resp.addHeader("Content-Type", "text/plain");
+        resp.setBody("Hello, world!\n");
+
+        dumpResponse(resp);
+        std::cout << "\n\n";
     }
-    (void)av; (void)env;
-    try
+
+    // ---- Test 2: File response ----
     {
-        HTTPMessage req = HTTPMessageParser::parse("GET /path HTTP/1.1\r\nHost: example.com\r\nAccept: */*\r\nConnection: close\r\n\r\n");
-        HTTPMessage res = HTTPMessageParser::parse("HTTP/1.1 200 ok\r\ncontent: something\r\nconnection: smth\r\n\r\nthis is a body");
+        std::cout << "=== File Response ===\n";
 
-        std::cout << "request:\n";
-        print_msg(req);
+        // Create a small test file
+        const char* filename = "test_file.txt";
+        {
+            std::ofstream f(filename);
+            f << "This is a test file served by HTTPResponse.\n";
+            f << "Line 2 of the file.\n";
+            f.close();
+        }
 
-        std::cout << "response:\n";
-        print_msg(res);
+        HTTPResponse resp(200, "OK");
+        resp.addHeader("Content-Type", "text/plain");
+        if (!resp.attachFile(filename)) {
+            std::cerr << "Failed to open file: " << filename << "\n";
+            return 1;
+        }
 
-        
+        dumpResponse(resp);
+        std::cout << "\n\n";
     }
-    catch(const std::exception& e)
+
+    // ---- Test 3: Not Found ----
     {
-        std::cerr << e.what() << '\n';
+        std::cout << "=== 404 Not Found ===\n";
+
+        HTTPResponse resp(404, "Not Found");
+        resp.addHeader("Content-Type", "text/html");
+        resp.setBody("<html><body><h1>404 Not Found</h1></body></html>");
+
+        dumpResponse(resp);
+        std::cout << "\n\n";
     }
 
     return 0;
