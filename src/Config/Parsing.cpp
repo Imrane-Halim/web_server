@@ -65,6 +65,34 @@ string reduceSpaces(const string &str) {
     return (result);
 }
 
+vector<string> split(const string &str) {
+    vector<string>    tokens;
+    string current;
+    char    c = '\0';
+
+    for (size_t i = 0; i < str.size();i++) {
+        if ((str[i] == '\'' || str[i] == '"') && c == '\0')
+            c = str[i];
+
+        else if ((str[i] == '\'' || str[i] == '"') && c == str[i])
+            c = '\0';
+
+        else if (str[i] == ' ' && c == '\0') {
+            if (!current.empty()) {
+                tokens.push_back(current);
+                current.clear();
+            }
+        }
+        else
+            current += str[i];
+    }
+
+    if (!current.empty())
+        tokens.push_back(current);
+
+    return tokens;
+}
+
 short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfigFile &config) {
     static bool srvActive = false;
     static bool inLocation = false;
