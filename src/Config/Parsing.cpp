@@ -32,6 +32,39 @@ string removeComment(const string &str) {
     return (reduceSpaces(trim(str)));
 }
 
+string trim(const string &str) {
+    size_t  start = str.find_first_not_of(" \t\n\r");
+    if (start == string::npos)
+        return ("");
+    size_t  end = str.find_last_not_of(" \t\n\r");
+    return (str.substr(start, end - start + 1));
+}
+
+string reduceSpaces(const string &str) {
+    string result;
+    bool    inSpace = false;
+    char    c = '\0';
+
+    for (size_t i = 0; i < str.size(); ++i) {
+        if ((str[i] == '\'' || str[i] == '\"') && (c != '\'' && c != '"'))
+            c = str[i];
+        else if ((str[i] == '\'' || str[i] == '\"') && (c == str[i]))
+            c = '\0';
+
+        if ((str[i] == ' ' || str[i] == '\t') && (c != '\'' && c != '\"')) {
+            if (!inSpace) {
+                result += ' ';
+                inSpace = true;
+            }
+        }
+        else {
+            result += str[i];
+            inSpace = false;
+        }
+    }
+    return (result);
+}
+
 short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfigFile &config) {
     static bool srvActive = false;
     static bool inLocation = false;
