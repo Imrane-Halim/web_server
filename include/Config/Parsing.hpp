@@ -8,164 +8,77 @@
 #include <map>
 #include <set>
 
+using namespace std;
+
 class   WebConfigFile;
 class   Server;
 class   Location;
 
 /**
  * @class WebConfigFile
- * @brief Represents the complete web server configuration file.
+ * @brief Represents the full web server configuration.
  *
- * This class stores all server blocks defined in a web server configuration file,
- * including all their associated location blocks.
+ * Stores all server blocks defined in a configuration file, 
+ * including each server's associated location blocks.
  *
  * @var servers
- * @brief Vector containing all Server objects defined in the configuration.
+ * @brief Container holding all Server objects parsed from the configuration.
  */
 class WebConfigFile {
-public:
-    std::vector<Server> servers;
+    public:
+        vector<Server> servers;
 };
-
 
 /**
  * @class Server
- * @brief Represents a server block in the web server configuration.
+ * @brief Holds all config for one server block.
  *
- * This class stores all configuration for a single server, including its listening IP and port,
- * server name, default root directory, maximum client body size, default index files, error pages,
- * and all associated location blocks.
- *
- * @note Use the default constructor Server() to initialize a server with standard default values.
- *
- * @var host
- * @brief IP address that the server listens on.
- *
- * @var port
- * @brief Port number that the server listens on.
- *
- * @var server_name
- * @brief Server name used for virtual hosting.
- *
- * @var root
- * @brief Default root directory for the server.
- *
- * @var client_max_body_size
- * @brief Maximum size (in bytes) allowed for client request bodies.
- *
- * @var index_files
- * @brief List of default index files for the server (e.g., index.html).
- *
- * @var error_pages
- * @brief Mapping of HTTP status codes to custom error page file paths.
- *
- * @var locations
- * @brief Vector of all Location blocks associated with this server.
- *
- * @fn Server
- * @brief Default constructor that initializes all server fields with standard defaults.
+ * Includes IP, port, name, root, client body limit, index files,
+ * error pages, and its locations.
  */
 class Server {
     public:
-        std::string host;
         int port;
-        std::string server_name;
-        std::string root;
-        size_t client_max_body_size;
-        std::vector<std::string> index_files;
-        std::map<int, std::string> error_pages;
-        std::vector<Location> locations;
+        string ip;
+        size_t maxBody;
+        string name;
+        string root;
+        vector<string> files;
+        vector<Location> locations;
+        map<int, string> errors;
 
         Server();
 };
 
-
-
 /**
  * @class Location
- * @brief Represents a location block in the web server configuration.
+ * @brief Holds all config for a location block within a server.
  *
- * This class stores all configuration related to a specific URL path within a server block.
- * It includes settings for the directory root, allowed HTTP methods, maximum client body size,
- * index files, autoindex behavior, CGI paths, redirects, and upload storage.
- *
- * @note Use ApplyDefaults(Server server) to initialize a location with default values from
- *       the parent server block.
- *
- * @var route
- * @brief The URL path that this location block handles.
- *
- * @var root
- * @brief The root directory for this location.
- *
- * @var client_max_body_size
- * @brief Maximum size (in bytes) allowed for client request bodies for this location.
- *
- * @var index_files
- * @brief List of default index files for this location (e.g., index.html).
- *
- * @var methods
- * @brief Allowed HTTP methods (e.g., GET, POST, DELETE) for this location.
- *
- * @var autoindex
- * @brief Flag indicating whether directory listing is enabled (true) or disabled (false).
- *
- * @var upload_store
- * @brief Directory path where uploaded files will be stored.
- *
- * @var redirect
- * @brief URL path to redirect requests to (if set).
- *
- * @var cgi_pass
- * @brief Path to CGI executable for handling dynamic requests.
- *
- * @fn ApplyDefaults
- * @brief Initializes the location block with default values from the parent server.
- * @param server The parent Server object to copy defaults from.
+ * Stores path, root, client body limit, index files, allowed methods,
+ * autoindex flag, CGI path, redirects, and upload folder.
  */
 class Location {
     public:
-        std::string route;
-        std::string root;
-        size_t client_max_body_size;
-        std::vector<std::string> index_files;
-        std::vector<std::string> methods;
+        string route;
+        string root;
+        size_t maxBody;
         bool autoindex;
-        std::string upload_store;
-        std::string redirect;
-        std::string cgi_pass;
+        string cgi;
+        string upload;
+        string redirect;
+        vector<string> files;
+        vector<string> methods;
 
         void ApplyDefaults(Server server);
 };
 
-
-
-// Removes leading and trailing whitespace from a string
-std::string trim(const std::string &str);
-
-// Removes comments (after '#') and trims extra spaces
-std::string removeComment(const std::string &str);
-
-// Reduces consecutive spaces/tabs to a single space (preserves quoted text)
-std::string reduceSpaces(const std::string &str);
-
-// Splits a string into tokens by spaces, keeping quoted strings intact
-std::vector<std::string> split(const std::string &str);
-
-// Prints standardized syntax error message and returns 1
-short printError(std::string &str, const std::string &fileName, size_t &lineNumber);
-
-// Parses entire configuration file and fills WebConfigFile structure
-short parseConfigFile(WebConfigFile &ConfigurationFile, const std::string &fileName);
-
-// Converts numeric string to size_t; returns error if non-digit found
-size_t myAtol(std::string str, std::string &line, const std::string &fileName, size_t &lineNumber);
-
-// Parses and validates a single directive line from the config
-short parseAndValidateDirective(std::string &str, const std::string &fileName, size_t &lineNumber, WebConfigFile &config);
-
-// Parses directives inside a server block and updates Server object
-short parseServerDirective(std::string str, std::vector<std::string> &tokens, Server &currentServer, const std::string &fileName, size_t &lineNumber);
-
-// Parses directives inside a location block and updates Location object
-short parseLocationDirective(std::string str, std::vector<std::string> &tokens, Location &currentLocation, const std::string &fileName, size_t &lineNumber);
+string trim(const string &str);
+string reduceSpaces(const string &str);
+string removeComment(const string &str);
+vector<string> split(const string &str);
+short parseConfigFile(WebConfigFile &config, const string &fname);
+short printError(string &str, const string &fname, size_t &lnNbr);
+size_t myAtol(string str, string &line, const string &fname, size_t &lnNbr);
+short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfigFile &config);
+short handleServer(string str, vector<string> &tokens, Server &srvTmp, const string &fname, size_t &lnNbr);
+short handleLocation(string str, vector<string> &tokens, Location &locTmp, const string &fname, size_t &lnNbr);
