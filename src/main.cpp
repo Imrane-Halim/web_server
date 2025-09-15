@@ -12,8 +12,6 @@ int main(int ac, char **av, char **env) {
     if (parseConfigFile(ConfigFile, av[1]))
         return (1);
 
-    (void) ac;
-    (void) av;
     (void) env;
 
     return (0);
