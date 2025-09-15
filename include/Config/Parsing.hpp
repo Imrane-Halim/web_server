@@ -71,3 +71,5 @@ class Location {
 
         void ApplyDefaults(Server server);
 };
+
+short parseConfigFile(WebConfigFile &config, const string &fname);

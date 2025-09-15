@@ -1,5 +1,44 @@
 #include "Parsing.hpp"
 
+short parseConfigFile(WebConfigFile &config, const string &fname) {
+    ifstream inputFile(fname.c_str());
+    if (!inputFile.is_open()) {
+        cerr << "Error: Cannot open config file " << fname << endl;
+        return (1);
+    }
+    string currentLine;
+    size_t lnNbr = 0;
+    while (getline(inputFile, currentLine)) {
+        ++lnNbr;
+        currentLine = removeComment(currentLine);
+        if (currentLine.empty())
+            continue;
+
+        if (handleDirective(currentLine, fname, lnNbr, config))
+            return (1);
+    }
+    if (lnNbr == 0) {
+        cerr << "Error: Configuration file is empty" << endl;
+        return (1);
+    }
+    inputFile.close();
+    return (0);
+}
+
+string removeComment(const string &str) {
+
+    (void)str;
+}
+
+short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfigFile &config) {
+
+    (void)str;
+    (void)fname;
+    (void)lnNbr;
+    (void)config;
+    return (0);
+}
+
 Server::Server() {
     ip = "127.0.0.1";
     port = 80;

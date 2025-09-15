@@ -7,6 +7,11 @@ int main(int ac, char **av, char **env) {
         return (1);
     }
 
+    WebConfigFile ConfigFile;
+
+    if (parseConfigFile(ConfigFile, av[1]))
+        return (1);
+
     (void) ac;
     (void) av;
     (void) env;
