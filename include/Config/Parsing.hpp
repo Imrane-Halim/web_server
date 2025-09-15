@@ -72,4 +72,13 @@ class Location {
         void ApplyDefaults(Server server);
 };
 
+string trim(const string &str);
+string reduceSpaces(const string &str);
+string removeComment(const string &str);
+vector<string> split(const string &str);
 short parseConfigFile(WebConfigFile &config, const string &fname);
+short printError(string &str, const string &fname, size_t &lnNbr);
+size_t myAtol(string str, string &line, const string &fname, size_t &lnNbr);
+short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfigFile &config);
+short handleServer(string str, vector<string> &tokens, Server &srvTmp, const string &fname, size_t &lnNbr);
+short handleLocation(string str, vector<string> &tokens, Location &locTmp, const string &fname, size_t &lnNbr);
