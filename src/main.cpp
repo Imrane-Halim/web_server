@@ -15,8 +15,20 @@ int main(int ac, char **av)
 
     WebConfigFile config;
 
-    if (!parseConfigFile(config, av[1]))
-        Routing routing(config);
+    if (parseConfigFile(config, av[1]))
+        return (1);
 
-    return 0;
+    Routing routing(config);
+    Server *srv = routing.findServer("localhost:8080");
+    if (srv)
+        cout << "Server found: " << srv->host << endl;
+
+    Location *loc = routing.findLocation(*srv, "/images/logo.png");
+    if (loc)
+        cout << "Location found: " << loc->route << endl;
+
+    bool allowed = routing.isMethodAllowed(*loc, "GET");
+    cout << "GET allowed? " << (allowed ? "Yes" : "No") << endl;
+
+    return (0);
 }
