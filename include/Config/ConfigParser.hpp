@@ -36,13 +36,13 @@ class WebConfigFile {
  * @class Server
  * @brief Holds all config for one server block.
  *
- * Includes IP, port, name, root, client body limit, index files,
+ * Includes host, port, name, root, client body limit, index files,
  * error pages, and its locations.
  */
 class Server {
     public:
         int port;
-        string ip;
+        string host;
         size_t maxBody;
         string name;
         string root;
