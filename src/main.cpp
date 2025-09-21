@@ -172,10 +172,12 @@ int main(int ac, char **av) {
 
     if (ac != 2)
     {
+        cerr << "usage: ./webserv [CONFIG]" << endl;
         return (EXIT_FAILURE);
     }
+
     WebConfigFile config;
-    
+
     parseConfigFile(config, av[1]);
 
     Routing ss(config);
