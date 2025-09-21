@@ -86,6 +86,12 @@ short handleDirective(string &str, const string &fname, size_t &lnNbr, WebConfig
             inLocation = false;
         }
         else if (srvActive) {
+            ostringstream port;
+            port << srvTmp.port;
+            if (srvTmp.name == "")
+                srvTmp.name = srvTmp.host + ":" + port.str();
+            else
+                srvTmp.name = srvTmp.name + ":" + port.str();
             config.servers.push_back(srvTmp);
             srvActive = false;
         }
@@ -389,7 +395,7 @@ string trim(const string &str) {
 Server::Server() {
     host = "127.0.0.1";
     port = 80;
-    name = "localip";
+    name = "";
     root = "/";
     files.push_back("index.html");
     maxBody = 10485760;
