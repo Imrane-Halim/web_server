@@ -2,6 +2,7 @@
 #define ROUTING_HPP
 
 #include "ConfigParser.hpp"
+#include "HTTPParser.hpp"
 
 class Routing
 {
