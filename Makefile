@@ -7,8 +7,11 @@ OBJ_DIR = .objects
 # base flags
 # the MMD flag is used to track changes in header files
 CXXFLAGS =  -Wall -Wextra -Werror -std=c++98 -MMD
-CXXFLAGS += -I$(INC_DIR)/utils -I$(INC_DIR)/Config -I$(INC_DIR)/http -g3
-
+CXXFLAGS += -I$(INC_DIR)/utils \
+			-I$(INC_DIR)/Config \
+			-I$(INC_DIR)/Routing \
+			-I$(INC_DIR)/http \
+			-g3
 # project files.
 # todo: remove the wildcard functions
 MAIN = src/main.cpp
