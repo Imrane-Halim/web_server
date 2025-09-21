@@ -34,7 +34,7 @@ Server *Routing::findServer(const std::string &host)
 {
     for (size_t i = 0; i < _config.servers.size(); i++)
     {
-        if (_config.servers[i].host == host)
+        if (_config.servers[i].name == host)
             return (&_config.servers[i]);
     }
     return (NULL);
