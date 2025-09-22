@@ -22,7 +22,7 @@ int main(int ac, char **av)
     Routing routing(config);
     HTTPResponse resp;
 
-    resp = handleRequest(routing, "localhost:8080", "/images/logo.png", "GET");
+    resp = handleRequest(routing, "localhost:8080", "/", "GET");
 
     return (0);
 }
