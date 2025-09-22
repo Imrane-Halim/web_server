@@ -1,9 +1,8 @@
 #include "ConfigParser.hpp"
 #include "Routing.hpp"
 #include "HTTPParser.hpp"
-#include <iostream>
-#include <cassert>
-#include <sstream>
+#include "Response.hpp"
+#include "error_pages.hpp"
 
 int main(int ac, char **av)
 {
@@ -13,26 +12,17 @@ int main(int ac, char **av)
         return (EXIT_FAILURE);
     }
 
+    initErrorPages(); 
+
     WebConfigFile config;
 
     if (parseConfigFile(config, av[1]))
         return (1);
 
     Routing routing(config);
-    Server *srv = routing.findServer("localhost:8080");
-    if (srv)
-        cout << "Server found: " << srv->host << endl;
-    else
-        return (1);
+    HTTPResponse resp;
 
-    Location *loc = routing.findLocation(*srv, "/images/logo.png");
-    if (loc)
-        cout << "Location found: " << loc->route << endl;
-    else
-        return (1);
-
-    bool allowed = routing.isMethodAllowed(*loc, "GET");
-    cout << "GET allowed? " << (allowed ? "Yes" : "No") << endl;
+    resp = handleRequest(routing, "localhost:8080", "/images/logo.png", "GET");
 
     return (0);
 }
