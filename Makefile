@@ -7,19 +7,26 @@ OBJ_DIR = .objects
 # base flags
 # the MMD flag is used to track changes in header files
 CXXFLAGS =  -Wall -Wextra -Werror -std=c++98 -MMD
-CXXFLAGS += -I$(INC_DIR)/utils -I$(INC_DIR)/Config -I$(INC_DIR)/http -I$(INC_DIR)/server -I$(INC_DIR)/Routing -g3
 
+CXXFLAGS += -I$(INC_DIR)/utils \
+			-I$(INC_DIR)/error_pages \
+			-I$(INC_DIR)/Config \
+			-I$(INC_DIR)/Routing \
+			-I$(INC_DIR)/http \
+			-I$(INC_DIR)/server \
+			-g3
 # project files.
 # todo: remove the wildcard functions
 MAIN = src/main.cpp
 PARSING = $(wildcard src/Config/*.cpp)
 ROUTING = $(wildcard src/Routing/*.cpp)
+ERRORS = $(wildcard src/error_pages/*.cpp)
 HTTP = $(wildcard src/http/*.cpp)
 SERVER = $(wildcard src/server/*.cpp)
 UTILS = $(wildcard src/utils/*.cpp)
 
 
-SRC = $(MAIN) $(UTILS) $(PARSING) $(ROUTING) $(HTTP) $(SERVER)
+SRC = $(MAIN) $(UTILS) $(ERRORS) $(PARSING) $(ROUTING) $(HTTP) $(SERVER)
 OBJ = $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
 
