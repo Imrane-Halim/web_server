@@ -123,6 +123,7 @@ void event_loop()
                             else if (client->getState() == KEEP_ALIVE) 
                             {
                                 // Keep connection alive, switch back to read mode
+                                client->reset();
                                 epoll.modify_fd(*event_socket, EPOLLIN);
                             }
                         }

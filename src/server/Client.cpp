@@ -140,7 +140,6 @@ bool Client::_sendResponseChunk()
         // Response complete
         if (shouldKeepAlive()) {
             _state = KEEP_ALIVE;
-            reset(); // Prepare for next request
         } else {
             _state = CLOSED;
         }
@@ -158,7 +157,6 @@ bool Client::_sendResponseChunk()
     if (_response->isComplete()) {
         if (shouldKeepAlive()) {
             _state = KEEP_ALIVE;
-            reset(); // Prepare for next request
         } else {
             _state = CLOSED;
         }
