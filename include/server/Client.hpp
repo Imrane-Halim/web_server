@@ -1,10 +1,12 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
+#include "EventHandler.hpp"
 #include "Socket.hpp"
 #include "../http/HTTPParser.hpp"
 #include "../http/Response.hpp"
 #include <sstream>
+#include "FdManager.hpp"
 
 enum ClientState {
     READING_REQUEST,
@@ -15,27 +17,27 @@ enum ClientState {
     ERROR_STATE
 };
 
-class Client
+class Client : public EventHandler
 {
-private:
-    Socket _socket;
-    HTTPParser _parser;
-    HTTPResponse* _response;
-    ClientState _state;
-    char _readBuffer[BUFF_SIZE];
-    
-    // Prevent copying
-    Client(const Client &other);
-    Client &operator=(const Client &other);
-    
-    // Internal state management
-    void _processRequest();
-    void _buildErrorResponse(int statusCode, const std::string& message);
-    bool _sendResponseChunk();
-    
-public:
-    Client();
-    Client(const Socket &socket);
+    private:
+        Socket _socket;
+        HTTPParser _parser;
+        HTTPResponse* _response;
+        ClientState _state;
+        char _readBuffer[BUFF_SIZE];
+
+        // Prevent copying
+        Client(const Client &other);
+        Client &operator=(const Client &other);
+
+        // Internal state management
+        void _processRequest();
+        void _buildErrorResponse(int statusCode, const std::string& message);
+        bool _sendResponseChunk();
+    public:
+
+    Client(FdManager &fdm);
+    Client(const Socket &socket, FdManager &fdm);
     ~Client();
     
     // Main I/O operations
@@ -54,6 +56,11 @@ public:
     // Getters for processed request data
     const HTTPParser& getParser() const;
     const Socket& getSocket() const;
-};
+    int get_fd() const;
 
-#endif // CLIENT_HPP
+    // EventHandler interface
+    void onReadable();
+    void onWritable();
+    void onError();
+};
+#endif //CLIENT_HPP

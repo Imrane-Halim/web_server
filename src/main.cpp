@@ -2,9 +2,25 @@
 #include <csignal>
 #include <exception>
 #include "../include/utils/Logger.hpp"
+#include "Epoll.hpp"
+#include "Socket.hpp"
+#include "Client.hpp"
+#include "../utils/Logger.hpp"
+#include "FdManager.hpp"
+#include <map>
+#include <iostream>
+#include <csignal>
+#include "EventLoop.hpp"
+#include "Server.hpp"
+
+
+
+std::string intToString(int value);
+
+// External shutdown flag (defined in main.cpp)
+
 
 // Forward declaration of the event_loop function
-void event_loop();
 
 // Global flag for graceful shutdown
 volatile sig_atomic_t g_shutdown = 0;
@@ -58,6 +74,9 @@ int main(int /* argc */, char* /* argv */[])
     {
         // Initialize logger
         Logger logger;
+        EventLoop eventLoop;
+        Server server;
+        eventLoop.fd_manager.add(server.get_fd(), &server);
         logger.info("Starting webserver...");
         
         // Setup signal handlers for graceful shutdown
@@ -71,8 +90,7 @@ int main(int /* argc */, char* /* argv */[])
         
         // Start the event loop
         logger.info("Starting event loop");
-        event_loop();
-        
+        eventLoop.run();
         // This point should not be reached unless event_loop exits
         logger.info("Event loop exited");
     }

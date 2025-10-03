@@ -7,14 +7,14 @@
 #include <vector>
 #include "Socket.hpp"
 
-#define EVENT_HAS_READ(event) ((event) & EPOLLIN)
-#define EVENT_HAS_WRITE(event) ((event) & EPOLLOUT)
-#define EVENT_HAS_ERROR(event) ((event) & (EPOLLERR | EPOLLHUP))
-#define EVENT_HAS_EDGE_TRIGGERED(event) ((event) & EPOLLET)
-#define EVENT_HAS_ONE_SHOT(event) ((event) & EPOLLONESHOT)
-#define EVENT_HAS_PRIORITY(event) ((event) & EPOLLPRI)
-#define EVENT_READ_WRITE (EPOLLIN | EPOLLOUT)
-#define EVENT_READ_WRITE_ERROR (EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP)
+#define READ_EVENT(event) ((event) & EPOLLIN)
+#define WRITE_EVENT(event) ((event) & EPOLLOUT)
+#define ERROR_EVENT(event) ((event) & (EPOLLERR | EPOLLHUP))
+#define EDGE_TRIGGERED_EVENT(event) ((event) & EPOLLET)
+#define ONE_SHOT_EVENT(event) ((event) & EPOLLONESHOT)
+#define PRIORITY_EVENT(event) ((event) & EPOLLPRI)
+#define READ_WRITE_EVENT (EPOLLIN | EPOLLOUT)
+#define READ_WRITE_ERROR_EVENT (EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP)
 
 #define MAX_EVENTS 1024
 
@@ -34,8 +34,8 @@ public:
     void remove_fd(int fd);
     void remove_fd(Socket &socket);
     void modify_fd(Socket &socket, uint32_t events);
-    std::vector<Socket> wait(int timeout = -1);
-    static Epoll& getInstance();
+    std::vector<epoll_event> wait(int timeout = -1);
+    int getFd();
 };
 
 

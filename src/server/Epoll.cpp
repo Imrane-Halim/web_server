@@ -58,9 +58,9 @@ void Epoll::modify_fd(Socket &socket, uint32_t events)
     modify_fd(socket.get_fd(), events);
 }
 
-std::vector<Socket> Epoll::wait(int timeout)
+std::vector<epoll_event> Epoll::wait(int timeout)
 {
-    std::vector<Socket> ready_fds;
+    std::vector<epoll_event> ready_events;
     struct epoll_event events[MAX_EVENTS];
     int num_events = ::epoll_wait(_epoll_fd, events, MAX_EVENTS, timeout);
     if (num_events == -1)
@@ -70,10 +70,10 @@ std::vector<Socket> Epoll::wait(int timeout)
     
     for (int i = 0; i < num_events; i++)
     {
-        ready_fds.push_back(Socket(events[i].data.fd, events[i].events));
+        ready_events.push_back(events[i]);
     }
     
-    return ready_fds;
+    return ready_events;
 }
 
 void Epoll::remove_fd(Socket &socket)
@@ -81,8 +81,6 @@ void Epoll::remove_fd(Socket &socket)
     remove_fd(socket.get_fd());
 }
 
-Epoll& Epoll::getInstance()
-{
-    static Epoll instance;
-    return instance;
+int Epoll::getFd() {
+    return _epoll_fd;
 }

@@ -13,12 +13,76 @@ std::string intToString(int value)
     return oss.str();
 }
 
-Client::Client() : _socket(), _response(NULL), _state(READING_REQUEST) 
+void Client::onReadable()
+{
+    bool needMoreData = readRequest();
+
+    if (hasError())
+    {
+
+        // Error state, close connection remove from FdManager
+        _fd_manager.remove(get_fd());
+        delete this;
+        return;
+    }
+    if (!needMoreData)
+    {
+        if (_state == SENDING_RESPONSE)
+        {
+            // Switch to writable to send response
+            _fd_manager.modify(this, EPOLLOUT);
+            return;
+        }
+        else if (_state == CLOSED)
+        {
+            // Connection closed by client, cleanup
+            _fd_manager.remove(get_fd());
+            delete this;
+            return;
+        }
+    }
+}
+
+void Client::onWritable()
+{
+    bool needMoreWrite = sendResponse();
+
+    if (hasError())
+    {
+        _fd_manager.remove(get_fd());
+        delete this;
+        return;
+    }
+    if (!needMoreWrite)
+    {
+        if (_state == CLOSED)
+        {
+            _fd_manager.remove(get_fd());
+            delete this;
+            return;
+        }
+        else if (_state == KEEP_ALIVE)
+        {
+            // Reset for next request
+            reset();
+            _fd_manager.modify(this, EPOLLIN);
+            // Switch back to readable
+        }
+    }
+}
+
+void Client::onError()
+{
+    _fd_manager.remove(get_fd());
+    delete this; 
+}
+
+Client::Client(FdManager &fdm) : EventHandler(fdm), _socket(), _response(NULL), _state(READING_REQUEST) 
 {
     memset(_readBuffer, 0, BUFF_SIZE);
 }
 
-Client::Client(const Socket &socket) : _socket(socket), _response(NULL), _state(READING_REQUEST) 
+Client::Client(const Socket &socket, FdManager &fdm) : EventHandler(fdm), _socket(socket), _response(NULL), _state(READING_REQUEST) 
 {
     memset(_readBuffer, 0, BUFF_SIZE);
 }
@@ -220,3 +284,4 @@ const Socket& Client::getSocket() const
 {
     return _socket;
 }
+
