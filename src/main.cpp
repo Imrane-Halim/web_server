@@ -1,6 +1,11 @@
 #include <iostream>
 #include <csignal>
 #include <exception>
+#include "ConfigParser.hpp"
+#include "Routing.hpp"
+#include "HTTPParser.hpp"
+#include "Response.hpp"
+#include "error_pages.hpp"
 #include "../include/utils/Logger.hpp"
 
 // Forward declaration of the event_loop function
@@ -52,10 +57,25 @@ void setup_signal_handlers()
  * @param argv Command line arguments (unused)
  * @return Exit status
  */
-int main(int /* argc */, char* /* argv */[])
+int main(int ac, char **av)
 {
+    if (ac != 2)
+    {
+        cerr << "usage: ./webserv [CONFIG]" << endl;
+        return (EXIT_FAILURE);
+    }
+
     try
     {
+
+        WebConfigFile config(av[1]);
+
+        Routing routing(config);
+        HTTPResponse resp;
+        resp = handleRequest(routing, "localhost:8080", "/default.conf", "GET");
+
+
+
         // Initialize logger
         Logger logger;
         logger.info("Starting webserver...");
@@ -90,40 +110,6 @@ int main(int /* argc */, char* /* argv */[])
     std::cout << "Server stopped gracefully" << std::endl;
     return 0;
 }
-// =======
-// #include "ConfigParser.hpp"
-// #include "Routing.hpp"
-// #include "HTTPParser.hpp"
-// #include "Response.hpp"
-// #include "error_pages.hpp"
-
-// int main(int ac, char **av)
-// {
-//     if (ac != 2)
-//     {
-//         cerr << "usage: ./webserv [CONFIG]" << endl;
-//         return (EXIT_FAILURE);
-//     }
-
-//     initErrorPages(); 
-
-//     WebConfigFile config;
-
-//     if (parseConfigFile(config, av[1]))
-//         return (1);
-
-//     Routing routing(config);
-//     HTTPResponse resp;
-
-//     resp = handleRequest(routing, "localhost:8080", "/default.conf", "GET");
-
-//     return (0);
-// }
-
-
-
-
-
 
 // ============= 
 /*
