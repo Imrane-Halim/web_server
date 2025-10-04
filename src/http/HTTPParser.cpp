@@ -92,6 +92,11 @@ void    HTTPParser::_parse()
         }
 
         made_progress = (_state != old_state);
+        if (_buffOffset * 2 >= BUFF_SIZE)
+        {
+            _buffer.erase(0, _buffOffset);
+            _buffOffset = 0;
+        }
     }
 }       
 void    HTTPParser::_parseStartLine()
