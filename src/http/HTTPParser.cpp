@@ -25,7 +25,8 @@ std::string&    HTTPParser::getUri(void) { return _uri; }
 strmap&         HTTPParser::getHeaders(void) { return _headers; }
 std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[key]; }
 
-std::string&    HTTPParser::getBody(void) { return _body; }
+const char*     HTTPParser::getBody(void) { return _body.data(); }
+size_t          HTTPParser::getBodySize(void) { return _body.size(); }
 
 parse_state     HTTPParser::getState(void) { return _state; }
 bool    HTTPParser::isComplete(void) { return _state == COMPLETE; }
