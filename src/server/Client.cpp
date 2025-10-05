@@ -15,74 +15,98 @@ std::string intToString(int value)
 
 void Client::onReadable()
 {
-    bool needMoreData = readRequest();
+    Logger logger;
+    
+    try {
+        bool needMoreData = readRequest();
 
-    if (hasError())
-    {
-
-        // Error state, close connection remove from FdManager
-        _fd_manager.remove(get_fd());
-        delete this;
-        return;
-    }
-    if (!needMoreData)
-    {
-        if (_state == SENDING_RESPONSE)
+        if (hasError())
         {
-            // Switch to writable to send response
-            _fd_manager.modify(this, EPOLLOUT);
-            return;
-        }
-        else if (_state == CLOSED)
-        {
-            // Connection closed by client, cleanup
+            logger.error("Client error on fd " + SSTR(get_fd()) + ", closing connection");
+            // Error state, close connection and remove from FdManager
             _fd_manager.remove(get_fd());
             delete this;
             return;
         }
+        
+        if (!needMoreData)
+        {
+            if (_state == SENDING_RESPONSE)
+            {
+                // Switch to writable to send response (Level-Triggered)
+                _fd_manager.modify(this, EPOLLOUT);
+                return;
+            }
+            else if (_state == CLOSED)
+            {
+                logger.info("Client closed connection on fd " + SSTR(get_fd()));
+                // Connection closed by client, cleanup
+                _fd_manager.remove(get_fd());
+                delete this;
+                return;
+            }
+        }
+    } catch (const std::exception& e) {
+        logger.error("Exception in Client::onReadable on fd " + SSTR(get_fd()) + ": " + std::string(e.what()));
+        _fd_manager.remove(get_fd());
+        delete this;
     }
 }
 
 void Client::onWritable()
 {
-    bool needMoreWrite = sendResponse();
+    Logger logger;
+    
+    try {
+        bool needMoreWrite = sendResponse();
 
-    if (hasError())
-    {
-        _fd_manager.remove(get_fd());
-        delete this;
-        return;
-    }
-    if (!needMoreWrite)
-    {
-        if (_state == CLOSED)
+        if (hasError())
         {
+            logger.error("Client send error on fd " + SSTR(get_fd()) + ", closing connection");
             _fd_manager.remove(get_fd());
             delete this;
             return;
         }
-        else if (_state == KEEP_ALIVE)
+        
+        if (!needMoreWrite)
         {
-            // Reset for next request
-            reset();
-            _fd_manager.modify(this, EPOLLIN);
-            // Switch back to readable
+            if (_state == CLOSED)
+            {
+                logger.info("Response sent, closing connection on fd " + SSTR(get_fd()));
+                _fd_manager.remove(get_fd());
+                delete this;
+                return;
+            }
+            else if (_state == KEEP_ALIVE)
+            {
+                logger.info("Keep-alive connection on fd " + SSTR(get_fd()) + ", switching to read mode");
+                // Reset for next request
+                reset();
+                // Switch back to readable (Level-Triggered)
+                _fd_manager.modify(this, EPOLLIN);
+            }
         }
+    } catch (const std::exception& e) {
+        logger.error("Exception in Client::onWritable on fd " + SSTR(get_fd()) + ": " + std::string(e.what()));
+        _fd_manager.remove(get_fd());
+        delete this;
     }
 }
 
 void Client::onError()
 {
+    Logger logger;
+    logger.error("Error event on client fd " + SSTR(get_fd()));
     _fd_manager.remove(get_fd());
     delete this; 
 }
 
-Client::Client(FdManager &fdm) : EventHandler(fdm), _socket(), _response(NULL), _state(READING_REQUEST) 
+Client::Client(ServerConfig &config, FdManager &fdm) : EventHandler(config, fdm), _socket(), _response(NULL), _state(READING_REQUEST) 
 {
     memset(_readBuffer, 0, BUFF_SIZE);
 }
 
-Client::Client(const Socket &socket, FdManager &fdm) : EventHandler(fdm), _socket(socket), _response(NULL), _state(READING_REQUEST) 
+Client::Client(const Socket &socket, ServerConfig &config, FdManager &fdm) : EventHandler(config, fdm), _socket(socket), _response(NULL), _state(READING_REQUEST) 
 {
     memset(_readBuffer, 0, BUFF_SIZE);
 }
@@ -97,6 +121,8 @@ Client::~Client()
 
 bool Client::readRequest()
 {
+    Logger logger;
+    
     if (_state != READING_REQUEST) {
         return false;
     }
@@ -106,12 +132,14 @@ bool Client::readRequest()
     
     if (bytesRead < 0) {
         // Error reading
+        logger.error("Read error on fd " + SSTR(get_fd()));
         _state = ERROR_STATE;
         return false;
     }
     
     if (bytesRead == 0) {
         // Client closed connection
+        logger.info("Client closed connection on fd " + SSTR(get_fd()));
         _state = CLOSED;
         return false;
     }
@@ -124,12 +152,14 @@ bool Client::readRequest()
     
     // Check parser state
     if (_parser.isError()) {
+        logger.warning("Parse error on fd " + SSTR(get_fd()));
         _state = ERROR_STATE;
         _buildErrorResponse(400, "Bad Request");
         return false;
     }
     
     if (_parser.isComplete()) {
+        logger.info("Request complete on fd " + SSTR(get_fd()));
         _state = PROCESSING;
         _processRequest();
         return false; // No more reading needed
@@ -197,6 +227,7 @@ void Client::_buildErrorResponse(int statusCode, const std::string& message)
 
 bool Client::_sendResponseChunk()
 {
+    Logger logger;
     char buffer[BUFF_SIZE];
     ssize_t bytesToSend = _response->readNextChunk(buffer, BUFF_SIZE);
     
@@ -213,12 +244,22 @@ bool Client::_sendResponseChunk()
     ssize_t bytesSent = _socket.send(buffer, bytesToSend, 0);
     
     if (bytesSent < 0) {
+        // Error sending
+        logger.error("Send error on fd " + SSTR(get_fd()));
         _state = ERROR_STATE;
         return false;
     }
     
+    if (bytesSent < bytesToSend) {
+        // Partial send - with level-triggered mode, we'll be called again
+        // Need to track offset for next send
+        logger.warning("Partial send on fd " + SSTR(get_fd()) + ": " + SSTR(bytesSent) + "/" + SSTR(bytesToSend));
+        return true;
+    }
+    
     // Check if response is complete
     if (_response->isComplete()) {
+        logger.info("Response complete on fd " + SSTR(get_fd()));
         if (shouldKeepAlive()) {
             _state = KEEP_ALIVE;
         } else {
@@ -283,5 +324,10 @@ const HTTPParser& Client::getParser() const
 const Socket& Client::getSocket() const
 {
     return _socket;
+}
+
+int Client::get_fd() const
+{
+    return _socket.get_fd();
 }
 

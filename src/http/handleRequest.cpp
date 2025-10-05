@@ -71,7 +71,7 @@ HTTPResponse createErrorResponse(int code)
  */
 HTTPResponse handleRequest(Routing &routing, const string &host, const string &request_path, const string &method)
 {
-    Server *server = routing.findServer(host);
+    ServerConfig *server = routing.findServer(host);
     if (!server)
         return (createErrorResponse(404));
 

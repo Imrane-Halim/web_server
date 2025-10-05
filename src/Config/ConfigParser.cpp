@@ -14,7 +14,7 @@
  *
  * Also calls initErrorPages() to ensure the error pages system is ready.
  */
-Server::Server()
+ServerConfig::ServerConfig()
 {
     initErrorPages();
     host = "127.0.0.1";
@@ -43,7 +43,7 @@ Server::Server()
  *
  * @param server The Server instance from which to inherit default values.
  */
-Location::Location(Server server)
+Location::Location(ServerConfig server)
 {
     route = "";
     root = server.root;
@@ -64,7 +64,7 @@ Location::Location(Server server)
  *
  * @return Reference to the internal vector of Server objects.
  */
-vector<Server> &WebConfigFile::getServers()
+vector<ServerConfig> &WebConfigFile::getServers()
 {
     return (_servers);
 }
@@ -79,7 +79,7 @@ vector<Server> &WebConfigFile::getServers()
  * @param name The name of the server to search for.
  * @return A copy of the matching Server object, or a default Server if none found.
  */
-Server WebConfigFile::getServer(const string &name)
+ServerConfig WebConfigFile::getServer(const string &name)
 {
     for (size_t i = 0; i < _servers.size(); i++)
     {
@@ -87,7 +87,7 @@ Server WebConfigFile::getServer(const string &name)
             return (_servers[i]);
     }
 
-    return (Server());
+    return (ServerConfig());
 }
 
 /**
@@ -98,7 +98,7 @@ Server WebConfigFile::getServer(const string &name)
  *
  * @param server The Server object to add to the configuration.
  */
-void WebConfigFile::addServer(const Server &server)
+void WebConfigFile::addServer(const ServerConfig &server)
 {
     _servers.push_back(server);
 }
@@ -374,7 +374,7 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
  * @param lnNbr The line number in the configuration file.
  * @return 0 if successful, 1 if a syntax error occurs.
  */
-short handleServer(string str, vector<string> &tokens, Server &srvTmp, const string &fname, size_t &lnNbr)
+short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, const string &fname, size_t &lnNbr)
 {
     if (tokens.size() < 2)
         return (printError(str, fname, lnNbr));
@@ -451,7 +451,7 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
 {
     static bool srvActive = false;
     static bool inLocation = false;
-    static Server srvTmp;
+    static ServerConfig srvTmp;
     static Location locTmp(srvTmp);
 
     vector<string> tokens = split(str);
@@ -464,7 +464,7 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
         if (srvActive)
             return printError(str, fName, lnNbr);
         srvActive = true;
-        srvTmp = Server();
+        srvTmp = ServerConfig();
         return (0);
     }
 

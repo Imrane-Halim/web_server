@@ -12,8 +12,8 @@ private:
 public:
     Routing(WebConfigFile &config);
 
-    Server *findServer(const std::string &host);
-    Location *findLocation(Server &server, const std::string &request_path);
+    ServerConfig *findServer(const std::string &host);
+    Location *findLocation(ServerConfig &server, const std::string &request_path);
     bool isMethodAllowed(Location &loc, const std::string &method);
 };
 

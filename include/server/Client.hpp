@@ -7,6 +7,8 @@
 #include "../http/Response.hpp"
 #include <sstream>
 #include "FdManager.hpp"
+#include "../Config/ConfigParser.hpp"
+
 
 enum ClientState {
     READING_REQUEST,
@@ -36,8 +38,8 @@ class Client : public EventHandler
         bool _sendResponseChunk();
     public:
 
-    Client(FdManager &fdm);
-    Client(const Socket &socket, FdManager &fdm);
+    Client(ServerConfig &config, FdManager &fdm);
+    Client(const Socket &socket, ServerConfig &config, FdManager &fdm);
     ~Client();
     
     // Main I/O operations

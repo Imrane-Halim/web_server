@@ -1,4 +1,12 @@
 #include "EventLoop.hpp"
+#include <sstream>
+#include <csignal>
+
+// Helper macro for converting to string
+#define SSTR(x) static_cast<std::ostringstream &>((std::ostringstream() << x)).str()
+
+// External shutdown flag
+extern volatile sig_atomic_t g_shutdown;
 
 EventLoop::EventLoop() : epoll(), fd_manager(epoll)
 {
@@ -10,23 +18,47 @@ void EventLoop::run()
     logger.info("Event loop started");
     while(!g_shutdown)
     {
-        std::vector<epoll_event> events = epoll.wait();
+        std::vector<epoll_event> events = epoll.wait(1000); // 1 second timeout for signal handling
         for (size_t i = 0; i < events.size(); i++) 
         {
             try 
             {
                 EventHandler* handler = fd_manager.getOwner(events[i].data.fd);
-                if (handler == NULL) 
+                if (handler == NULL) {
+                    logger.warning("Event for unknown fd: " + SSTR(events[i].data.fd));
                     continue;
-                if (READ_EVENT(events[i].events)) handler->onReadable();
-                if (WRITE_EVENT(events[i].events)) handler->onWritable();
-                if (ERROR_EVENT(events[i].events)) handler->onError();
+                }
+                
+                // Handle error events first
+                if (ERROR_EVENT(events[i].events)) {
+                    logger.warning("Error event on fd: " + SSTR(events[i].data.fd));
+                    handler->onError();
+                    continue; // Don't process other events after error
+                }
+                
+                // Handle read events
+                if (READ_EVENT(events[i].events)) {
+                    handler->onReadable();
+                }
+                
+                // Check if handler still exists (might have been deleted in onReadable)
+                if (fd_manager.exists(events[i].data.fd) && WRITE_EVENT(events[i].events)) {
+                    handler->onWritable();
+                }
             }
             catch (const std::exception &e) 
             {
-                //TODO : Handle exception, possibly log it
                 logger.error("Exception in event loop: " + std::string(e.what()));
-                // Note: Deletion of handler should be handled in onError or by the handler itself
+                // Try to cleanup the problematic handler
+                try {
+                    EventHandler* handler = fd_manager.getOwner(events[i].data.fd);
+                    if (handler) {
+                        fd_manager.remove(events[i].data.fd);
+                        delete handler;
+                    }
+                } catch (...) {
+                    logger.error("Failed to cleanup handler after exception");
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 #ifndef CGI_HANDLER_HPP
 #define CGI_HANDLER_HPP
 
+#include "EventHandler.hpp"
 #include <string>
 #include <map>
 #include <vector>
@@ -13,10 +14,11 @@
 #include "Pipe.hpp"
 #include "HTTPParser.hpp"
 #include "Epoll.hpp"
+#include "Response.hpp"
 
 #define BUFFER_SIZE 4096
 
-class CGIHandler
+class CGIHandler : public EventHandler
 {
     private:
         std::string _scriptPath;
@@ -26,28 +28,84 @@ class CGIHandler
         Pipe _outputPipe;
         pid_t _pid;
         HTTPParser &_parser;
+        HTTPResponse _response;
         bool _isRunning;
+        char *_bodyBuffer;
+        char *_buffer;
 
         CGIHandler(const CGIHandler &other);
         CGIHandler &operator=(const CGIHandler &other);
         void push_interpreter_if_needed();
         void initEnv(HTTPParser &parser);
         void initArgv();
-
     public:
-        CGIHandler(const std::string &scriptPath, HTTPParser &parser);
-        ~CGIHandler();
-
+        CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm);
+        ~CGIHandler() {}
+        int get_fd();
         void start();
+        void onReadable();
+        void onWritable();
+        void onError();
         bool isRunning() const;
-        void feedInput(const char *data, size_t size);
-        void readOutput(const char *buffer, size_t size);
         void kill();
 };
 
-void CGIHandler::readOutput(const char *buffer, size_t size)
-{
 
+void CGIHandler::onReadable()
+{
+    char buffer[BUFFER_SIZE];
+    int bytesRead = _outputPipe.read(buffer, BUFFER_SIZE);
+    if (bytesRead > 0)
+    {
+        buffer[bytesRead] = '\0';
+        _parser.addChunk(buffer, bytesRead);
+    }
+    else if (bytesRead == 0)
+    {
+        // EOF
+        _outputPipe.closeRead();
+        _isRunning = false;
+        // Prepare response
+    }
+    else
+    {
+        // Error
+        onError();
+    }
+}
+
+void CGIHandler::onWritable()
+{
+    if (_bodyBuffer && strlen(_bodyBuffer) > 0)
+    {
+        int bytesWritten = _inputPipe.write(_bodyBuffer, strlen(_bodyBuffer));
+        if (bytesWritten > 0)
+        {
+            _bodyBuffer += bytesWritten;
+            if (*_bodyBuffer == '\0')
+            {
+                _inputPipe.closeWrite();
+            }
+        }
+        else if (bytesWritten < 0)
+        {
+            // Error
+            onError();
+        }
+    }
+    else
+    {
+        _inputPipe.closeWrite();
+    }
+}
+
+void CGIHandler::onError()
+{
+    if (_isRunning)
+        kill();
+    _inputPipe.close();
+    _outputPipe.close();
+    _isRunning = false;
 }
 
 std::map <std::string, std::string> initInterpreterMap()
@@ -242,10 +300,10 @@ void CGIHandler::initEnv(HTTPParser &parser)
     _env.push_back(NULL); // Null-terminate for execve
 }
 
-CGIHandler::CGIHandler(const std::string &scriptPath, HTTPParser &parser)
-    : _scriptPath(scriptPath), _pid(-1), _isRunning(false) , _parser(parser)
+CGIHandler::CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm)
+    : _scriptPath(scriptPath), _pid(-1), _isRunning(false) , _parser(parser), EventHandler(config, fdm)
 {
-
+    _buffer = parser.getBodyBuffer();
 }
 
 CGIHandler::~CGIHandler()
@@ -298,8 +356,8 @@ void CGIHandler::start()
         // Parent process
         _outputPipe.set_non_blocking();
         _inputPipe.set_non_blocking();
-        Epoll::getInstance().add_fd(_outputPipe.read_fd(), EPOLLIN);
-        Epoll::getInstance().add_fd(_inputPipe.write_fd(), EPOLLOUT);
+        _fd_manager.add(_outputPipe.read_fd(), this, EPOLLIN);
+        _fd_manager.add(_inputPipe.write_fd(), this, EPOLLOUT);
         _inputPipe.closeRead();
         _outputPipe.closeWrite();
         _isRunning = true;
@@ -311,13 +369,6 @@ bool CGIHandler::isRunning() const
     return _isRunning;
 }
 
-void CGIHandler::feedInput(const char *data, size_t size)
-{
-    if (!_isRunning || !data || size == 0)
-        return;
-
-    _inputPipe.write(data, size);
-}
 
 void CGIHandler::kill()
 {
@@ -334,5 +385,6 @@ void CGIHandler::kill()
         delete[] _env[i];
     _env.clear();
 }
+
 
 #endif //CGI_HANDLER_HPP

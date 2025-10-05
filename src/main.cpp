@@ -87,16 +87,26 @@ int main(int ac, char **av)
         WebConfigFile config(av[1]);
 
         Routing routing(config);
-        HTTPResponse resp;
-        resp = handleRequest(routing, "localhost:8080", "/default.conf", "GET");
+        // HTTPResponse resp;
+        // resp = handleRequest(routing, "localhost:8080", "/default.conf", "GET");
 
 
 
         // Initialize logger
         Logger logger;
         EventLoop eventLoop;
-        Server server(eventLoop.fd_manager);
-        eventLoop.fd_manager.add(server.get_fd(), &server);
+        std::vector<ServerConfig> servers = config.getServers();
+        
+        // Store server pointers for proper lifetime management
+        std::vector<Server*> serverInstances;
+        
+        for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it)
+        {
+            Server* server = new Server(*it, eventLoop.fd_manager);
+            serverInstances.push_back(server);
+            eventLoop.fd_manager.add(server->get_fd(), server, EPOLLIN);
+            logger.info("Configured server: " + it->name + " on " + it->host + ":" + intToString(it->port));
+        }
         logger.info("Starting webserver...");
         
         // Setup signal handlers for graceful shutdown
@@ -111,6 +121,15 @@ int main(int ac, char **av)
         // Start the event loop
         logger.info("Starting event loop");
         eventLoop.run();
+        
+        // Cleanup servers after event loop exits
+        logger.info("Cleaning up servers...");
+        for (std::vector<Server*>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
+        {
+            eventLoop.fd_manager.remove((*it)->get_fd());
+            delete *it;
+        }
+        
         // This point should not be reached unless event_loop exits
         logger.info("Event loop exited");
     }

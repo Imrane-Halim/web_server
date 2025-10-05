@@ -16,7 +16,7 @@
 using namespace std;
 
 class WebConfigFile;
-struct Server;
+struct ServerConfig;
 struct Location;
 
 /**
@@ -27,7 +27,7 @@ struct Location;
 class WebConfigFile
 {
 private:
-    vector<Server> _servers; ///< List of all servers in the configuration.
+    vector<ServerConfig> _servers; ///< List of all servers in the configuration.
 
 public:
     /**
@@ -39,20 +39,20 @@ public:
     /**
      * @brief Returns a reference to the vector of all servers.
      */
-    vector<Server> &getServers();
+    vector<ServerConfig> &getServers();
 
     /**
      * @brief Returns a server by its name.
      * @param name Name of the server.
      * @return Server object (default if not found).
      */
-    Server getServer(const string &name);
+    ServerConfig getServer(const string &name);
 
     /**
      * @brief Adds a server to the configuration.
      * @param server Server object to add.
      */
-    void addServer(const Server &server);
+    void addServer(const ServerConfig &server);
 };
 
 /**
@@ -61,7 +61,7 @@ public:
  * Contains network info, root directory, max body size, error pages,
  * and its associated locations.
  */
-struct Server
+struct ServerConfig
 {
     int port;                   ///< Server port number.
     string host;                ///< Server host address.
@@ -75,7 +75,7 @@ struct Server
     /**
      * @brief Default constructor initializing default values.
      */
-    Server();
+    ServerConfig();
 };
 
 /**
@@ -101,7 +101,7 @@ struct Location
      * @brief Constructs a Location with default values from a Server.
      * @param server Server object to apply defaults from.
      */
-    Location(Server server);
+    Location(ServerConfig server);
 };
 
 #endif

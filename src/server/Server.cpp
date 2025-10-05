@@ -1,0 +1,81 @@
+#include "../../include/server/Server.hpp"
+#include "../../include/server/Client.hpp"
+#include "../../include/utils/Logger.hpp"
+#include <sstream>
+
+// Helper macro for converting to string
+#define SSTR(x) static_cast<std::ostringstream &>((std::ostringstream() << x)).str()
+
+Server::Server(ServerConfig &config, FdManager &fdm) 
+    : EventHandler(config, fdm), socket(AF_INET, SOCK_STREAM, 0)
+{
+    Logger logger;
+    
+    // Set socket options for reuse
+    int opt = 1;
+    if (setsockopt(socket.get_fd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        throw std::runtime_error("Failed to set SO_REUSEADDR");
+    }
+    
+    // Bind to address
+    struct sockaddr_in address;
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = inet_addr(config.host.c_str());
+    address.sin_port = htons(config.port);
+    
+    socket.bind(address);
+    socket.listen();
+    socket.set_non_blocking();
+    
+    logger.info("Server initialized on " + config.host + ":" + SSTR(config.port));
+}
+
+Server::~Server()
+{
+    socket.close();
+}
+
+int Server::get_fd() const
+{
+    return socket.get_fd();
+}
+
+void Server::onReadable()
+{
+    Logger logger;
+    
+    try {
+        // Accept new connection
+        Socket client_socket = socket.accept();
+        client_socket.set_non_blocking();
+        
+        logger.info("New client connection accepted on fd: " + SSTR(client_socket.get_fd()));
+        
+        // Create new Client handler
+        Client* client = new Client(client_socket, _config, _fd_manager);
+        
+        // Register client with epoll for reading (Level-Triggered)
+        _fd_manager.add(client->get_fd(), client, EPOLLIN);
+        
+    } catch (const std::exception& e) {
+        logger.error("Failed to accept client connection: " + std::string(e.what()));
+        // Don't throw - server should continue accepting other connections
+    }
+}
+
+void Server::onWritable()
+{
+    // Server socket should never be in writable state
+    Logger logger;
+    logger.warning("Unexpected writable event on server socket");
+}
+
+void Server::onError()
+{
+    Logger logger;
+    logger.error("Error on server socket fd: " + SSTR(get_fd()));
+    
+    // Close socket and remove from epoll
+    socket.close();
+    _fd_manager.remove(get_fd());
+}

@@ -18,15 +18,15 @@ Routing::Routing(WebConfigFile &config) : _config(config)
  * @brief Finds and returns a pointer to the server that matches the given host name.
  *
  * This function searches through all servers in the configuration (_config) 
- * and returns a pointer to the Server whose 'name' matches the provided host string.
+ * and returns a pointer to the ServerConfig whose 'name' matches the provided host string.
  * If no matching server is found, it returns NULL.
  *
  * @param host The host string to match against the server names.
- * @return Pointer to the matching Server object, or NULL if no match is found.
+ * @return Pointer to the matching ServerConfig object, or NULL if no match is found.
  */
-Server *Routing::findServer(const std::string &host)
+ServerConfig *Routing::findServer(const std::string &host)
 {
-    std::vector<Server> &servers = _config.getServers();
+    std::vector<ServerConfig> &servers = _config.getServers();
     for (size_t i = 0; i < servers.size(); i++)
     {
         if (servers[i].name == host)
@@ -46,7 +46,7 @@ Server *Routing::findServer(const std::string &host)
  * @param request_path The HTTP request path to match.
  * @return Pointer to the best matching Location, or NULL if none found.
  */
-Location *Routing::findLocation(Server &server, const std::string &request_path)
+Location *Routing::findLocation(ServerConfig &server, const std::string &request_path)
 {
     Location *best = NULL;
     size_t best_len = 0;
