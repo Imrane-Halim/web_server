@@ -6,21 +6,37 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <stdexcept>
 
 #define CRLF        "\r\n"
 #define BUFF_SIZE   8192    // 8kb
 #define NPOS        std::string::npos
 
 typedef std::map<std::string, std::string> strmap;
+typedef void (*bodyHandler)(const char* buff, size_t size, void *data);
 
 enum parse_state
 {
     START_LINE  ,
     HEADERS     ,
-    BODY        ,       // POST
+    BODY        ,       // simple body with content-length
+    CHUNK_SIZE  ,       // transfer-encoding: chunked
+    CHUNK_DATA  ,       ///
     COMPLETE    ,
     ERROR
 };
+
+#include <iostream>
+
+template<typename t>
+t ft_atoi(const std::string& n)
+{
+    char* ptr;
+    t v = strtol(n.data(), &ptr, 16);
+    if (*ptr)
+        throw std::logic_error("invalid number");
+    return v;
+}
 
 /*
     NOTE: from what i observed in nginx cgi response parsing:
@@ -49,11 +65,17 @@ class HTTPParser
     size_t      _contentLength;
     size_t      _bytesRead;
 
+    bool    _isChunked;
+    size_t  _chunkSize;
+    size_t  _readChunkSize; // the number of bytes read from the chunk
+
+    bodyHandler _bodyHandler;
+    void        *_data;
+
     // cgi
-    // bool _isCGIResponse;
+    bool _isCGIResponse;
     // file upload stuff
     // std::string _filePath;
-    // bool chunked transfer;
 
     // the current state
     parse_state _state;
@@ -61,6 +83,9 @@ class HTTPParser
     // the buffer holding the recived chunk
     std::string _buffer;
     size_t      _buffOffset;
+
+    void    _parseChunkedSize();
+    void    _parseChunkedSegment();
 
     void    _parseBody();       // dependeing on 'Content-Type', the body is handled deferently
     void    _parseHeaders();
@@ -80,6 +105,11 @@ public:
     std::string&    getHeader(const std::string& key);
 
     std::string&    getBody(void);
+
+    void    setBodyHandler(bodyHandler bh, void *data);
+    
+    void    setCGIMode(bool m);
+    bool    getCGIMode(void);
 
     parse_state     getState();
     bool            isComplete();

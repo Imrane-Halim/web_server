@@ -5,6 +5,12 @@
 HTTPParser::HTTPParser():
     _contentLength(0),
     _bytesRead(0),
+    _isChunked(false),
+    _chunkSize(0),
+    _readChunkSize(0),
+    _bodyHandler(NULL),
+    _data(NULL),
+    _isCGIResponse(false),
     _state(START_LINE),
     _buffOffset(0)
 {
@@ -12,7 +18,7 @@ HTTPParser::HTTPParser():
     _body.reserve(BUFF_SIZE);
 }
 
-std::string&    HTTPParser::getMethod(void) {return _method; }
+std::string&    HTTPParser::getMethod(void) { return _method; }
 std::string&    HTTPParser::getVers(void) { return _version; }
 std::string&    HTTPParser::getUri(void) { return _uri; }
 
@@ -25,21 +31,30 @@ parse_state     HTTPParser::getState(void) { return _state; }
 bool    HTTPParser::isComplete(void) { return _state == COMPLETE; }
 bool    HTTPParser::isError(void) { return _state == ERROR; }
 
+void    HTTPParser::setCGIMode(bool m) { _isCGIResponse = m; }
+bool    HTTPParser::getCGIMode(void) { return _isCGIResponse; }
+
 void    HTTPParser::reset(void)
 {
     _method.clear();
     _uri.clear();
     _version.clear();
     _body.clear();
-
     _headers.clear();
-
+    
     _state = START_LINE;
-
     _buffer.clear();
     _buffOffset = 0;
+
+    _isChunked = false;
+    _chunkSize = 0;
+    _readChunkSize = 0;
+ 
     _contentLength = 0;
     _bytesRead = 0;
+
+    _bodyHandler = NULL;
+    _data = NULL;
 }
 
 void    HTTPParser::addChunk(char* buff, size_t size)
@@ -60,9 +75,17 @@ void    HTTPParser::_parse()
 
         switch (_state)
         {
-        case START_LINE: _parseStartLine(); break;
+        case START_LINE:
+            if (!_isCGIResponse)
+            {
+                _parseStartLine();
+                break;
+            }
+        /* fall through */
         case HEADERS: _parseHeaders(); break;
         case BODY: _parseBody(); break;
+        case CHUNK_SIZE: _parseChunkedSize(); break;
+        case CHUNK_DATA: _parseChunkedSegment(); break;
         case COMPLETE: case ERROR: break;
         }
 
@@ -129,12 +152,20 @@ void    HTTPParser::_parseHeaders()
             _buffOffset += 2; // skip the empty line
             // Check if we need to parse body based on content length
             strmap::iterator it = _headers.find("content-length");
-            if (it != _headers.end())
+            strmap::iterator it2 = _headers.find("transfer-encoding");
+            if (it != _headers.end() && it2 == _headers.end()) // prioritize chunked over con-lenth
             {
                 char*   ptr = NULL;
                 _contentLength = std::strtol(it->second.data(), &ptr, 10);
                 _state = (*ptr ? ERROR : BODY);
                 if (_state == ERROR) return;
+            }
+            else if (it2 != _headers.end())
+            {
+                std::string& enc = it2->second;
+                std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
+                _state = (it2->second == "chunked" ? CHUNK_SIZE : ERROR);
+                _isChunked = true;
             }
             else
                 _state = COMPLETE;
@@ -176,7 +207,10 @@ void    HTTPParser::_parseBody()
     size_t needed = _contentLength - _bytesRead;
     size_t to_read = std::min(available, needed);
     
-    _body.append(_buffer.begin() + _buffOffset, _buffer.begin() + _buffOffset + to_read);
+    if (_bodyHandler)
+        _bodyHandler(_buffer.data() + _buffOffset, to_read, _data);
+    else
+        _body.append(_buffer.data() + _buffOffset, to_read);
     _bytesRead += to_read;
     _buffOffset += to_read;
     
@@ -184,3 +218,74 @@ void    HTTPParser::_parseBody()
         _state = COMPLETE;
 }
 
+void    HTTPParser::_parseChunkedSize()
+{
+    if (_buffer.empty() || _buffOffset >= _buffer.size())
+        return;
+
+    size_t idx = _buffer.find(CRLF, _buffOffset);
+    if (idx == NPOS)
+        return;
+
+    std::string chunkLine = _buffer.substr(_buffOffset, idx - _buffOffset);
+    size_t extension_pos = chunkLine.find(';');
+    if (extension_pos != NPOS)
+        chunkLine = chunkLine.substr(0, extension_pos);
+
+    try {
+        _chunkSize = ft_atoi<size_t>(chunkLine);
+    }
+    catch (std::exception& e)
+    {
+        _state = ERROR;
+        return;
+    }
+
+    _buffOffset = idx + 2;
+    _readChunkSize = 0;
+    
+    if (_chunkSize == 0)
+    {
+        _state = COMPLETE;
+        return;
+    }
+    
+    _state = CHUNK_DATA;
+}
+void    HTTPParser::_parseChunkedSegment()
+{
+    if (_buffer.empty() || _buffOffset >= _buffer.size())
+        return;
+    size_t available = _buffer.size() - _buffOffset;
+    size_t needed = _chunkSize - _readChunkSize;
+    size_t to_read = std::min(available, needed);
+
+    if (to_read > 0)
+    {
+        if (_bodyHandler)
+            _bodyHandler(_buffer.data() + _buffOffset, to_read, _data);
+        else
+            _body.append(_buffer.data() + _buffOffset, to_read);
+        _readChunkSize += to_read;
+        _buffOffset += to_read;
+    }
+
+    if (_readChunkSize < _chunkSize)
+        return;
+    if (_buffer.size() - _buffOffset >= 2)
+    {
+        if (_buffer.substr(_buffOffset, 2) == CRLF)
+        {
+            _buffOffset += 2;
+            _state = CHUNK_SIZE;
+        }
+        else
+            _state = ERROR;
+    }
+}
+
+void    HTTPParser::setBodyHandler(bodyHandler bh, void *data)
+{
+    _bodyHandler = bh;
+    _data = data;
+}
