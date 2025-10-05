@@ -71,8 +71,8 @@ class Location {
         string redirect;
         vector<string> files;
         vector<string> methods;
-
-        void ApplyDefaults(Server server);
+    
+    void ApplyDefaults(Server server);
 };
 
 string trim(const string &str);

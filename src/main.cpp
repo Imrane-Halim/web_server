@@ -75,7 +75,7 @@ int main(int /* argc */, char* /* argv */[])
         // Initialize logger
         Logger logger;
         EventLoop eventLoop;
-        Server server;
+        Server server(eventLoop.fd_manager);
         eventLoop.fd_manager.add(server.get_fd(), &server);
         logger.info("Starting webserver...");
         
