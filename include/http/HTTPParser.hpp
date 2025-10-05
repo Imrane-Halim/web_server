@@ -104,7 +104,7 @@ public:
     strmap&         getHeaders(void);
     std::string&    getHeader(const std::string& key);
 
-    std::string&    getBody(void);
+    // std::string&    getBody(void);
 
     void    setBodyHandler(bodyHandler bh, void *data);
     
@@ -114,6 +114,9 @@ public:
     parse_state     getState();
     bool            isComplete();
     bool            isError();
+
+    const char* getBody(void);
+    size_t      getBodySize(void);
 
     void    reset();  // To reuse object for keep-alive connections
 

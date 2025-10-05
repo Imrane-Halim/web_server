@@ -25,7 +25,8 @@ std::string&    HTTPParser::getUri(void) { return _uri; }
 strmap&         HTTPParser::getHeaders(void) { return _headers; }
 std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[key]; }
 
-std::string&    HTTPParser::getBody(void) { return _body; }
+const char*     HTTPParser::getBody(void) { return _body.data(); }
+size_t          HTTPParser::getBodySize(void) { return _body.size(); }
 
 parse_state     HTTPParser::getState(void) { return _state; }
 bool    HTTPParser::isComplete(void) { return _state == COMPLETE; }
@@ -55,6 +56,8 @@ void    HTTPParser::reset(void)
 
     _bodyHandler = NULL;
     _data = NULL;
+
+    _isCGIResponse = false;
 }
 
 void    HTTPParser::addChunk(char* buff, size_t size)
@@ -90,6 +93,11 @@ void    HTTPParser::_parse()
         }
 
         made_progress = (_state != old_state);
+        if (_buffOffset * 2 >= BUFF_SIZE)
+        {
+            _buffer.erase(0, _buffOffset);
+            _buffOffset = 0;
+        }
     }
 }       
 void    HTTPParser::_parseStartLine()

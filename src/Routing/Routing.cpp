@@ -1,30 +1,40 @@
 #include "Routing.hpp"
 
+/**
+ * @brief Constructs a Routing object with a reference to a WebConfigFile.
+ *
+ * This constructor initializes the Routing instance by storing a reference
+ * to the configuration object (_config), which holds all server and location
+ * information. The Routing object will use this configuration to route
+ * HTTP requests to the appropriate server.
+ *
+ * @param config Reference to the WebConfigFile containing server configurations.
+ */
 Routing::Routing(WebConfigFile &config) : _config(config)
 {
 }
 
 /**
- * @brief Finds the server that matches the given host string.
+ * @brief Finds and returns a pointer to the server that matches the given host name.
  *
- * This function iterates through all servers stored in the configuration (_config)
- * and returns a pointer to the server whose 'host' matches the provided string.
+ * This function searches through all servers in the configuration (_config) 
+ * and returns a pointer to the Server whose 'name' matches the provided host string.
+ * If no matching server is found, it returns NULL.
  *
- * Note:
- * - If no matching server is found, the function returns NULL.
- *
- * @param host The host string from the HTTP request to match against server hosts.
- * @return Pointer to the matching Server object, or NULL if none found.
+ * @param host The host string to match against the server names.
+ * @return Pointer to the matching Server object, or NULL if no match is found.
  */
 Server *Routing::findServer(const std::string &host)
 {
-    for (size_t i = 0; i < _config.servers.size(); i++)
+    std::vector<Server> &servers = _config.getServers();
+    for (size_t i = 0; i < servers.size(); i++)
     {
-        if (_config.servers[i].name == host)
-            return (&_config.servers[i]);
+        if (servers[i].name == host)
+            return &servers[i];
     }
     return (NULL);
 }
+
 
 /**
  * @brief Finds the Location that best matches the request path.
