@@ -92,6 +92,7 @@ struct Location
     size_t maxBody;         ///< Maximum allowed body size for this location.
     bool autoindex;         ///< Whether directory listing is enabled.
     string cgi;             ///< CGI script path.
+    int cgi_timeout;        ///< Timeout for CGI execution.
     string upload;          ///< Upload directory path.
     string redirect;        ///< Redirect URL.
     vector<string> files;   ///< Default index files for this location.
