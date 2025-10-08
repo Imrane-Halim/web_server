@@ -106,7 +106,7 @@ Client::Client(ServerConfig &config, FdManager &fdm) : EventHandler(config, fdm)
     memset(_readBuffer, 0, BUFF_SIZE);
 }
 
-Client::Client(Socket &socket, ServerConfig &config, FdManager &fdm) : EventHandler(config, fdm, socket), _response(NULL), _state(READING_REQUEST) 
+Client::Client(Socket &socket, ServerConfig &config, FdManager &fdm) : EventHandler(config, fdm), _response(NULL), _state(READING_REQUEST), _socket(socket) 
 {
     memset(_readBuffer, 0, BUFF_SIZE);
 }

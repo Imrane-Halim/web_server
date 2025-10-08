@@ -31,7 +31,8 @@ class CGIHandler : public EventHandler
         HTTPParser &_parser;
         HTTPResponse _response;
         bool _isRunning;
-        const char *_bodyBuffer;
+        char *_writeBuffer;
+        char *_readBuffer;
 
         CGIHandler(const CGIHandler &other);
         CGIHandler &operator=(const CGIHandler &other);
@@ -39,7 +40,8 @@ class CGIHandler : public EventHandler
         void initEnv(HTTPParser &parser);
         void initArgv();
     public:
-        CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm);
+        //pass env instead of parser ref?
+        CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm, char *writeBuffer, char *readBuffer);
         ~CGIHandler() {}
         int get_fd();
         void start();
@@ -53,52 +55,12 @@ class CGIHandler : public EventHandler
 
 void CGIHandler::onReadable()
 {
-    char buffer[BUFFER_SIZE];
-    int bytesRead = _outputPipe.read(buffer, BUFFER_SIZE);
-    if (bytesRead > 0)
-    {
-        buffer[bytesRead] = '\0';
-        _parser.addChunk(buffer, bytesRead);
-    }
-    else if (bytesRead == 0)
-    {
-        // EOF
-        _outputPipe.closeRead();
-        _isRunning = false;
-        // Prepare response
-    }
-    else
-    {
-        // Error
-        onError();
-    }
+    // Read from the output pipe and feed it to the parser then construct response and pass it to the writeBuffer
 }
 
 void CGIHandler::onWritable()
 {
-    _bodyBuffer = _parser.getBody();
-    size_t bodySize = _parser.getBodySize();
-    if (_bodyBuffer && bodySize > 0)
-    {
-        int bytesWritten = _inputPipe.write(_bodyBuffer, bodySize);
-        if (bytesWritten > 0)
-        {
-            _bodyBuffer += bytesWritten;
-            if (*_bodyBuffer == '\0')
-            {
-                _inputPipe.closeWrite();
-            }
-        }
-        else if (bytesWritten < 0)
-        {
-            // Error
-            onError();
-        }
-    }
-    else
-    {
-        _inputPipe.closeWrite();
-    }
+    //write body from the readBuffer to the pipe;
 }
 
 void CGIHandler::onError()
@@ -302,8 +264,8 @@ void CGIHandler::initEnv(HTTPParser &parser)
     _env.push_back(NULL); // Null-terminate for execve
 }
 
-CGIHandler::CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm)
-    : _scriptPath(scriptPath), _pid(-1), _isRunning(false) , _parser(parser), EventHandler(config, fdm)
+CGIHandler::CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm, char *writeBuffer, char *readBuffer)
+    : _scriptPath(scriptPath), _pid(-1), _isRunning(false) , _parser(parser), EventHandler(config, fdm), _writeBuffer(writeBuffer), _readBuffer(readBuffer)
 {
 }
 

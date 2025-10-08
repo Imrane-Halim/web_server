@@ -25,6 +25,7 @@ class Client : public EventHandler
         HTTPParser _parser;
         HTTPResponse* _response;
         ClientState _state;
+        Socket _socket;
         char _readBuffer[BUFF_SIZE];
 
         // Prevent copying

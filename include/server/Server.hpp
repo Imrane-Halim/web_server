@@ -8,6 +8,9 @@
 class Server : public EventHandler
 {
     private:
+        Socket _socket;
+        Server(const Server &other);
+        Server &operator=(const Server &other);
     public:
         Server(ServerConfig &config, FdManager &fdm);
         ~Server();
