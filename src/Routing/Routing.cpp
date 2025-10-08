@@ -85,13 +85,34 @@ bool Routing::isMethodAllowed(Location &loc, const std::string &method)
     return (false);
 }
 
+/**
+ * @brief Determines the best routing match for an incoming HTTP request.
+ *
+ * This function performs the full routing resolution process:
+ *  1. Finds the ServerConfig that matches the provided host name.
+ *  2. Finds the best matching Location within that server based on the request path.
+ *  3. Checks whether the given HTTP method is allowed for that Location.
+ *
+ * The results are returned in a RouteMatch structure, which contains:
+ *  - `sv`: pointer to the matched ServerConfig (or NULL if not found)
+ *  - `lc`: pointer to the matched Location (or NULL if not found)
+ *  - `method`: boolean indicating whether the HTTP method is allowed
+ *
+ * If either the server or location is not found, or the method is not allowed,
+ * the corresponding fields in the returned RouteMatch will reflect that.
+ *
+ * @param host The "Host" header value from the HTTP request.
+ * @param request_path The path portion of the HTTP request URL.
+ * @param method The HTTP method used in the request (e.g., "GET", "POST", "DELETE").
+ * @return A RouteMatch structure containing the resolved routing information.
+ */
 RouteMatch Routing::getMatch(const std::string &host, const std::string &request_path, const std::string &method)
 {
     RouteMatch res;
 
     res.sv = NULL;
     res.lc = NULL;
-    res.method = false;
+    res.m = false;
 
     if (!(res.sv = findServer(host)))
         return (res);
@@ -99,7 +120,7 @@ RouteMatch Routing::getMatch(const std::string &host, const std::string &request
     if (!(res.lc = findLocation(*res.sv, request_path)))
         return (res);
 
-    res.method = isMethodAllowed(*res.lc, method);
+    res.m = isMethodAllowed(*res.lc, method);
 
     return (res);
 }
