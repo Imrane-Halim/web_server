@@ -9,7 +9,8 @@ std::string intToString(int value)
 
 Client::Client(Socket &socket, ServerConfig &config, FdManager &fdm):
     EventHandler(config, fdm, socket),
-    _strFD(intToString(_socket.get_fd()))
+    _strFD(intToString(_socket.get_fd())),
+    _state(ST_READING)
 {}
 Client::~Client() { _socket.close(); }
 
@@ -64,7 +65,7 @@ bool    Client::_readData()
     }
     if (size == 0)
     {
-        logger.debug("Connetion closed on fd: " + _strFD);
+        logger.warning("Connetion closed on fd: " + _strFD);
         _state = ST_CLOSED;
         return false;
     }
@@ -123,6 +124,8 @@ bool    Client::_sendData()
 
 void    Client::_closeConnection()
 {
+    _response.closeFile();
+    _socket.close();
     _fd_manager.remove(get_fd());
 }
 
@@ -146,25 +149,23 @@ void    Client::_processError()
     // todo: send status code '400 bad request'
     // for now I am just going to ignore it
 }
-void    Client::_processRequest()
+void Client::_processRequest()
 {
     _keepAlive = _shouldKeepAlive();
     // Add basic headers
     _response.startLine();
     _response.addHeader("Server", "WebServ/1.0");
     _response.addHeader("Connection", _keepAlive ? "keep-alive" : "close");
+    _response.addHeader("content-type", "text/html");
     
-    // For now, just echo back request info as a simple response
-    std::string body = "<html><body>";
-    body += "<h1>Request Received</h1>";
-    body += "<p>Method: " + _request.getMethod() + "</p>";
-    body += "<p>URI: " + _request.getUri() + "</p>";
-    body += "<p>Version: " + _request.getVers() + "</p>";
-    body += "</body></html>";
-    _response.addHeader("Content-Length", SSTR(body.size()));
-    _response.endHeaders();
-    _response.setBody(body);
-
+    // Add logging to verify file attachment
+    if (!_response.attachFile("./www/index.html"))
+        logger.error("Failed to attach file ./www/index.html on fd: " + _strFD);
+        // Fallback to error response
+        // _buildErrorResponse(404, "File not found");
+    else
+        logger.debug("Successfully attached file on fd: " + _strFD);
+    
     _state = ST_SENDING;
     _fd_manager.modify(this, EPOLLOUT);
 }
