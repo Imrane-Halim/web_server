@@ -11,7 +11,7 @@
 #include <map>
 #include <set>
 
-#include "error_pages.hpp"
+#include "SpecialResponse.hpp"
 
 using namespace std;
 

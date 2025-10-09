@@ -5,7 +5,6 @@
 #include "Routing.hpp"
 #include "HTTPParser.hpp"
 #include "Response.hpp"
-#include "error_pages.hpp"
 #include "../include/utils/Logger.hpp"
 #include "Epoll.hpp"
 #include "Socket.hpp"
