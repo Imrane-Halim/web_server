@@ -43,10 +43,7 @@ void    Client::onWritable()
     case ST_ERROR       : _processError(); break;
     case ST_SENDCOMPLETE:
         if (_keepAlive) reset();
-        else
-        {
-            _state = ST_CLOSED;
-        }
+        else _state = ST_CLOSED;
         break;
     case ST_CLOSED: _closeConnection(); break;
     default: break;
@@ -132,7 +129,7 @@ void    Client::_closeConnection()
 void    Client::reset()
 {
     _request.reset();
-    _response.reset();
+    _response = HTTPResponse();
     _state = ST_READING;
     _fd_manager.modify(this, EPOLLIN);
 }
