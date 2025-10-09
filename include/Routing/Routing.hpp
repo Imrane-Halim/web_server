@@ -22,16 +22,15 @@ struct RouteMatch
 class Routing
 {
 private:
-    WebConfigFile &_config; // Reference to global server configuration
+    ServerConfig &_server; // Reference to global server configuration
 
-    ServerConfig *findServer(const std::string &host);                             // Find server by host name
     Location *findLocation(ServerConfig &server, const std::string &request_path); // Find best matching location
     bool isMethodAllowed(Location &loc, const std::string &method);                // Check if method is allowed in location
 
 public:
-    Routing(WebConfigFile &config); // Initialize with configuration reference
+    Routing(ServerConfig &config); // Initialize with configuration reference
 
-    RouteMatch getMatch(const std::string &host, const std::string &request_path, const std::string &method); // Get matching route
+    RouteMatch getMatch(const std::string &request_path, const std::string &method); // Get matching route
 };
 
 #endif

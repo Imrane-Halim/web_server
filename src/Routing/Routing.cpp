@@ -10,29 +10,8 @@
  *
  * @param config Reference to the WebConfigFile containing server configurations.
  */
-Routing::Routing(WebConfigFile &config) : _config(config)
+Routing::Routing(ServerConfig &server) : _server(server)
 {
-}
-
-/**
- * @brief Finds and returns a pointer to the server that matches the given host name.
- *
- * This function searches through all servers in the configuration (_config)
- * and returns a pointer to the ServerConfig whose 'name' matches the provided host string.
- * If no matching server is found, it returns NULL.
- *
- * @param host The host string to match against the server names.
- * @return Pointer to the matching ServerConfig object, or NULL if no match is found.
- */
-ServerConfig *Routing::findServer(const std::string &host)
-{
-    std::vector<ServerConfig> &servers = _config.getServers();
-    for (size_t i = 0; i < servers.size(); i++)
-    {
-        if (servers[i].name == host)
-            return &servers[i];
-    }
-    return (NULL);
 }
 
 /**
@@ -106,16 +85,13 @@ bool Routing::isMethodAllowed(Location &loc, const std::string &method)
  * @param method The HTTP method used in the request (e.g., "GET", "POST", "DELETE").
  * @return A RouteMatch structure containing the resolved routing information.
  */
-RouteMatch Routing::getMatch(const std::string &host, const std::string &request_path, const std::string &method)
+RouteMatch Routing::getMatch(const std::string &request_path, const std::string &method)
 {
     RouteMatch res;
 
-    res.sv = NULL;
+    res.sv = &_server;
     res.lc = NULL;
     res.m = false;
-
-    if (!(res.sv = findServer(host)))
-        return (res);
 
     if (!(res.lc = findLocation(*res.sv, request_path)))
         return (res);

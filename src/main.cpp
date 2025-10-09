@@ -17,12 +17,9 @@
 #include "EventLoop.hpp"
 #include "Server.hpp"
 
-
-
 std::string intToString(int value);
 
 // External shutdown flag (defined in main.cpp)
-
 
 // Forward declaration of the event_loop function
 
@@ -51,17 +48,17 @@ void setup_signal_handlers()
     sa.sa_handler = signal_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = 0;
-    
+
     if (sigaction(SIGINT, &sa, NULL) == -1)
     {
         throw std::runtime_error("Failed to setup SIGINT handler");
     }
-    
+
     if (sigaction(SIGTERM, &sa, NULL) == -1)
     {
         throw std::runtime_error("Failed to setup SIGTERM handler");
     }
-    
+
     // Ignore SIGPIPE to handle broken pipe errors gracefully
     signal(SIGPIPE, SIG_IGN);
 }
@@ -85,54 +82,48 @@ int main(int ac, char **av)
 
         WebConfigFile config(av[1]);
 
-        Routing routing(config);
-        // HTTPResponse resp;
-        // resp = handleRequest(routing, "localhost:8080", "/default.conf", "GET");
-
-
-
         // Initialize logger
         Logger logger;
         EventLoop eventLoop;
         std::vector<ServerConfig> servers = config.getServers();
-        
+
         // Store server pointers for proper lifetime management
-        std::vector<Server*> serverInstances;
-        
+        std::vector<Server *> serverInstances;
+
         for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it)
         {
-            Server* server = new Server(*it, eventLoop.fd_manager);
+            Server *server = new Server(*it, eventLoop.fd_manager);
             serverInstances.push_back(server);
             eventLoop.fd_manager.add(server->get_fd(), server, EPOLLIN);
             logger.info("Configured server: " + it->name + " on " + it->host + ":" + intToString(it->port));
         }
         logger.info("Starting webserver...");
-        
+
         // Setup signal handlers for graceful shutdown
         setup_signal_handlers();
         logger.info("Signal handlers configured");
-        
+
         // Print startup message
         std::cout << "=== Webserver Starting ===" << std::endl;
         std::cout << "Press Ctrl+C to stop the server gracefully" << std::endl;
         std::cout << "Listening for connections..." << std::endl;
-        
+
         // Start the event loop
         logger.info("Starting event loop");
         eventLoop.run();
-        
+
         // Cleanup servers after event loop exits
         logger.info("Cleaning up servers...");
-        for (std::vector<Server*>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
+        for (std::vector<Server *>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
         {
             eventLoop.fd_manager.remove((*it)->get_fd());
             delete *it;
         }
-        
+
         // This point should not be reached unless event_loop exits
         logger.info("Event loop exited");
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
@@ -142,12 +133,12 @@ int main(int ac, char **av)
         std::cerr << "Unknown error occurred" << std::endl;
         return 1;
     }
-    
+
     std::cout << "Server stopped gracefully" << std::endl;
     return 0;
 }
 
-// ============= 
+// =============
 /*
 #include "HTTPParser.hpp"
 #include <fstream>
@@ -161,13 +152,13 @@ struct FileUploadContext
     std::ofstream file;
     size_t bytes_written;
     size_t max_size;
-    
+
     FileUploadContext(const char* filepath, size_t max = 10*1024*1024)
         : bytes_written(0), max_size(max)
     {
         file.open(filepath, std::ios::binary);
     }
-    
+
     ~FileUploadContext()
     {
         if (file.is_open())
@@ -178,23 +169,23 @@ struct FileUploadContext
 void fileUploadHandler(const char* buff, size_t size, void* data)
 {
     FileUploadContext* ctx = static_cast<FileUploadContext*>(data);
-    
+
     if (!ctx->file.is_open())
     {
         std::cerr << "Error: File not open!" << std::endl;
         return;
     }
-    
+
     if (ctx->bytes_written + size > ctx->max_size)
     {
         std::cerr << "Error: File size limit exceeded!" << std::endl;
         return;
     }
-    
+
     ctx->file.write(buff, size);
     ctx->bytes_written += size;
-    
-    std::cout << "[UPLOAD] Written " << size << " bytes (total: " 
+
+    std::cout << "[UPLOAD] Written " << size << " bytes (total: "
               << ctx->bytes_written << ")" << std::endl;
 }
 
@@ -203,23 +194,23 @@ struct CGIContext
 {
     int pipe_fd;
     size_t bytes_written;
-    
+
     CGIContext(int fd) : pipe_fd(fd), bytes_written(0) {}
 };
 
 void cgiInputHandler(const char* buff, size_t size, void* data)
 {
     CGIContext* ctx = static_cast<CGIContext*>(data);
-    
+
     ssize_t written = write(ctx->pipe_fd, buff, size);
     if (written < 0)
     {
         std::cerr << "Error: Failed to write to CGI pipe!" << std::endl;
         return;
     }
-    
+
     ctx->bytes_written += written;
-    std::cout << "[CGI] Written " << written << " bytes to pipe (total: " 
+    std::cout << "[CGI] Written " << written << " bytes to pipe (total: "
               << ctx->bytes_written << ")" << std::endl;
 }
 
@@ -230,7 +221,7 @@ void printRequestInfo(HTTPParser& parser)
     std::cout << "Method : " << parser.getMethod() << std::endl;
     std::cout << "URI    : " << parser.getUri() << std::endl;
     std::cout << "Version: " << parser.getVers() << std::endl;
-    
+
     std::cout << "\nHeaders:" << std::endl;
     strmap headers = parser.getHeaders();
     for (strmap::iterator it = headers.begin(); it != headers.end(); ++it)
@@ -243,15 +234,15 @@ bool readFileContent(const char* filepath, std::string& content)
     std::ifstream file(filepath, std::ios::binary);
     if (!file.is_open())
         return false;
-    
+
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
-    
+
     content.resize(size);
     file.read(&content[0], size);
     file.close();
-    
+
     return true;
 }
 
@@ -260,28 +251,28 @@ bool readFileContent(const char* filepath, std::string& content)
 void test_simple_file_upload()
 {
     std::cout << "\n========== Test 1: Simple File Upload ==========" << std::endl;
-    
+
     HTTPParser parser;
     FileUploadContext upload_ctx("/tmp/test_upload.txt");
     parser.setBodyHandler(fileUploadHandler, &upload_ctx);
-    
-    char request[] = 
+
+    char request[] =
         "POST /upload HTTP/1.1\r\n"
         "Content-Type: application/octet-stream\r\n"
         "Content-Length: 26\r\n"
         "\r\n"
         "This is test file content!";
-    
+
     parser.addChunk(request, strlen(request));
-    
+
     if (parser.isComplete())
     {
         printRequestInfo(parser);
         std::cout << "Upload complete! Bytes written: " << upload_ctx.bytes_written << std::endl;
-        
+
         // Close file to flush buffer
         upload_ctx.file.close();
-        
+
         // Verify file content
         std::string content;
         if (readFileContent("/tmp/test_upload.txt", content))
@@ -294,12 +285,12 @@ void test_simple_file_upload()
 void test_chunked_file_upload()
 {
     std::cout << "\n========== Test 2: Chunked Transfer File Upload ==========" << std::endl;
-    
+
     HTTPParser parser;
     FileUploadContext upload_ctx("/tmp/test_chunked_upload.txt");
     parser.setBodyHandler(fileUploadHandler, &upload_ctx);
-    
-    char request[] = 
+
+    char request[] =
         "POST /upload HTTP/1.1\r\n"
         "Transfer-Encoding: chunked\r\n"
         "\r\n"
@@ -311,17 +302,17 @@ void test_chunked_file_upload()
         "\r\n"               // Chunk trailing CRLF
         "0\r\n"              // End
         "\r\n";
-    
+
     parser.addChunk(request, strlen(request));
-    
+
     if (parser.isComplete())
     {
         printRequestInfo(parser);
         std::cout << "Chunked upload complete! Bytes written: " << upload_ctx.bytes_written << std::endl;
-        
+
         // Force flush by destroying context
         upload_ctx.file.close();
-        
+
         std::string content;
         if (readFileContent("/tmp/test_chunked_upload.txt", content))
             std::cout << "File content: " << content << std::endl;
@@ -333,32 +324,32 @@ void test_chunked_file_upload()
 void test_large_file_simulation()
 {
     std::cout << "\n========== Test 3: Large File Upload (Simulated) ==========" << std::endl;
-    
+
     HTTPParser parser;
     FileUploadContext upload_ctx("/tmp/test_large_upload.bin");
     parser.setBodyHandler(fileUploadHandler, &upload_ctx);
-    
+
     // Send headers first
-    char headers[] = 
+    char headers[] =
         "POST /upload HTTP/1.1\r\n"
         "Content-Length: 8192\r\n"
         "\r\n";
-    
+
     parser.addChunk(headers, strlen(headers));
-    
+
     // Simulate receiving file in chunks
     char chunk[1024];
     memset(chunk, 'A', sizeof(chunk));
-    
+
     for (int i = 0; i < 8; ++i)
     {
         parser.addChunk(chunk, sizeof(chunk));
         std::cout << "Processed chunk " << (i+1) << "/8" << std::endl;
     }
-    
+
     if (parser.isComplete())
     {
-        std::cout << "\nLarge file upload complete! Total bytes: " 
+        std::cout << "\nLarge file upload complete! Total bytes: "
                   << upload_ctx.bytes_written << std::endl;
     }
 }
@@ -366,7 +357,7 @@ void test_large_file_simulation()
 void test_cgi_input()
 {
     std::cout << "\n========== Test 4: CGI POST Data ==========" << std::endl;
-    
+
     // Create a pipe to simulate CGI stdin
     int pipefd[2];
     if (pipe(pipefd) == -1)
@@ -374,27 +365,27 @@ void test_cgi_input()
         std::cerr << "Failed to create pipe!" << std::endl;
         return;
     }
-    
+
     HTTPParser parser;
     CGIContext cgi_ctx(pipefd[1]);  // Write end
     parser.setBodyHandler(cgiInputHandler, &cgi_ctx);
-    
-    char request[] = 
+
+    char request[] =
         "POST /cgi-bin/process.php HTTP/1.1\r\n"
         "Content-Type: application/x-www-form-urlencoded\r\n"
         "Content-Length: 29\r\n"
         "\r\n"
         "name=John&email=john@test.com";
-    
+
     parser.addChunk(request, strlen(request));
-    
+
     if (parser.isComplete())
     {
         printRequestInfo(parser);
-        
+
         // Close write end and read from pipe
         close(pipefd[1]);
-        
+
         char buffer[256];
         ssize_t n = read(pipefd[0], buffer, sizeof(buffer) - 1);
         if (n > 0)
@@ -402,7 +393,7 @@ void test_cgi_input()
             buffer[n] = '\0';
             std::cout << "CGI received data: " << buffer << std::endl;
         }
-        
+
         close(pipefd[0]);
     }
 }
@@ -410,19 +401,19 @@ void test_cgi_input()
 void test_cgi_chunked_input()
 {
     std::cout << "\n========== Test 5: CGI with Chunked Transfer ==========" << std::endl;
-    
+
     int pipefd[2];
     if (pipe(pipefd) == -1)
     {
         std::cerr << "Failed to create pipe!" << std::endl;
         return;
     }
-    
+
     HTTPParser parser;
     CGIContext cgi_ctx(pipefd[1]);
     parser.setBodyHandler(cgiInputHandler, &cgi_ctx);
-    
-    char request[] = 
+
+    char request[] =
         "POST /cgi-bin/upload.py HTTP/1.1\r\n"
         "Transfer-Encoding: chunked\r\n"
         "\r\n"
@@ -432,14 +423,14 @@ void test_cgi_chunked_input()
         " World!\r\n"
         "0\r\n"
         "\r\n";
-    
+
     parser.addChunk(request, strlen(request));
-    
+
     if (parser.isComplete())
     {
         printRequestInfo(parser);
         close(pipefd[1]);
-        
+
         char buffer[256];
         ssize_t n = read(pipefd[0], buffer, sizeof(buffer) - 1);
         if (n > 0)
@@ -447,7 +438,7 @@ void test_cgi_chunked_input()
             buffer[n] = '\0';
             std::cout << "CGI received chunked data: " << buffer << std::endl;
         }
-        
+
         close(pipefd[0]);
     }
 }
@@ -455,18 +446,18 @@ void test_cgi_chunked_input()
 void test_no_handler_fallback()
 {
     std::cout << "\n========== Test 6: No Handler (Default Behavior) ==========" << std::endl;
-    
+
     HTTPParser parser;
     // No handler set - should use default _body storage
-    
-    char request[] = 
+
+    char request[] =
         "POST /test HTTP/1.1\r\n"
         "Content-Length: 13\r\n"
         "\r\n"
         "Hello, World!";
-    
+
     parser.addChunk(request, strlen(request));
-    
+
     if (parser.isComplete())
     {
         printRequestInfo(parser);
@@ -479,21 +470,21 @@ int main()
 {
     std::cout << "HTTP Parser Test Suite - File Upload & CGI Focus\n";
     std::cout << "================================================\n";
-    
+
     test_simple_file_upload();
     test_chunked_file_upload();
     test_large_file_simulation();
     test_cgi_input();
     test_cgi_chunked_input();
     test_no_handler_fallback();
-    
+
     std::cout << "\n================================================" << std::endl;
     std::cout << "All tests completed!" << std::endl;
     std::cout << "\nCheck /tmp/ for uploaded files:" << std::endl;
     std::cout << "  - test_upload.txt" << std::endl;
     std::cout << "  - test_chunked_upload.txt" << std::endl;
     std::cout << "  - test_large_upload.bin" << std::endl;
-    
+
     return 0;
 }
 
