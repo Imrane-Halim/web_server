@@ -1,16 +1,11 @@
 #include "Response.hpp"
 
-HTTPResponse::HTTPResponse(int code, const std::string& status, const std::string& version):
+HTTPResponse::HTTPResponse():
     _resp_offset(0),
     _file_fd(-1),
     _file_size(0),
     _bytes_sent(0)
-{
-    _response += version + ' ';
-    _response += SSTR(code) + ' ';
-    _response += status;
-    _response += CRLF;
-}
+{}
 
 HTTPResponse::~HTTPResponse()
 {
@@ -123,4 +118,12 @@ void    HTTPResponse::reset()
     _response.clear();
     _resp_offset = 0;
     closeFile();
+}
+
+void    HTTPResponse::startLine(int code, const std::string &status, const std::string &version)
+{
+    _response += version + ' ';
+    _response += SSTR(code) + ' ';
+    _response += status;
+    _response += CRLF;
 }

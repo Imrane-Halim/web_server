@@ -26,12 +26,15 @@ class HTTPResponse
     size_t _file_size;  // total file size
     size_t _bytes_sent; // bytes sent from file
 
-    // HTTPResponse(const HTTPResponse &other);
-    // HTTPResponse &operator=(const HTTPResponse &other);
+    // prevent fd issues
+    HTTPResponse(const HTTPResponse &other);
+    HTTPResponse &operator=(const HTTPResponse &other);
 
 public:
-    HTTPResponse(int code = 200, const std::string &status = "OK", const std::string &version = "HTTP/1.1");
-    ~HTTPResponse(); // closes file if open
+    HTTPResponse();
+    ~HTTPResponse();
+
+    void    startLine(int code = 200, const std::string &status = "OK", const std::string &version = "HTTP/1.1");
 
     // returns the class itself. todo shit like: res.add().add() ...
     HTTPResponse &addHeader(const std::string &name, const std::string &value);

@@ -129,7 +129,7 @@ void    Client::_closeConnection()
 void    Client::reset()
 {
     _request.reset();
-    _response = HTTPResponse();
+    _response.reset();
     _state = ST_READING;
     _fd_manager.modify(this, EPOLLIN);
 }
@@ -150,6 +150,7 @@ void    Client::_processRequest()
 {
     _keepAlive = _shouldKeepAlive();
     // Add basic headers
+    _response.startLine();
     _response.addHeader("Server", "WebServ/1.0");
     _response.addHeader("Connection", _keepAlive ? "keep-alive" : "close");
     
