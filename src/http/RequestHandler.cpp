@@ -41,7 +41,7 @@ void    RequestHandler::processRequest()
     if (match.lc)
     {
         if (_request.getUri() == "/")
-            path = match.lc->root + '/' + match.lc->files[0];
+            path = match.lc->root + '/' + match.lc->indexFiles[0];
         else
             path = match.lc->root + _request.getUri();
     }
