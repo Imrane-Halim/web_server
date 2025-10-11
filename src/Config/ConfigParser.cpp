@@ -21,7 +21,7 @@ ServerConfig::ServerConfig()
     port = 8080;
     name = "localhost:8080";
     root = "/";
-    files.push_back("index.html");
+    indexFiles.push_back("index.html");
     maxBody = 10485760;
     errors[400] = getErrorPage(400);
     errors[403] = getErrorPage(403);
@@ -55,7 +55,7 @@ Location::Location(ServerConfig server)
     autoindex = false;
     methods.push_back("GET");
     maxBody = server.maxBody;
-    files = server.files;
+    indexFiles = server.indexFiles;
 }
 
 /**
@@ -323,15 +323,15 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
 
     else if (tokens[0] == "index")
     {
-        locTmp.files.clear();
+        locTmp.indexFiles.clear();
         for (size_t i = 1; i < tokens.size(); i++)
         {
-            for (size_t j = 0; j < locTmp.files.size(); j++)
+            for (size_t j = 0; j < locTmp.indexFiles.size(); j++)
             {
-                if (tokens[i] == locTmp.files[j])
+                if (tokens[i] == locTmp.indexFiles[j])
                     return printError(str, fname, lnNbr);
             }
-            locTmp.files.push_back(tokens[i]);
+            locTmp.indexFiles.push_back(tokens[i]);
         }
     }
 
@@ -410,15 +410,15 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
 
     else if (tokens[0] == "index")
     {
-        srvTmp.files.clear();
+        srvTmp.indexFiles.clear();
         for (size_t i = 1; i < tokens.size(); i++)
         {
-            for (size_t j = 0; j < srvTmp.files.size(); j++)
+            for (size_t j = 0; j < srvTmp.indexFiles.size(); j++)
             {
-                if (tokens[i] == srvTmp.files[j])
+                if (tokens[i] == srvTmp.indexFiles[j])
                     return printError(str, fname, lnNbr);
             }
-            srvTmp.files.push_back(tokens[i]);
+            srvTmp.indexFiles.push_back(tokens[i]);
         }
     }
 
