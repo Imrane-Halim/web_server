@@ -50,6 +50,8 @@ public:
 
     void    reset();
 
+    void    setCGIMode(bool b); // todo: ignores the '_handler' and send the raw _sendbuff
+
     // EventHandler interface
     int get_fd() const;
     void onReadable();
