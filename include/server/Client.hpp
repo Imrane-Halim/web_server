@@ -8,7 +8,7 @@
 #include "Response.hpp"
 #include "ConfigParser.hpp"
 #include "Logger.hpp"
-
+#include "RequestHandler.hpp"
 
 enum ClientState
 {
@@ -24,10 +24,10 @@ enum ClientState
 class Client: public EventHandler
 {
     Logger logger;
+    RequestHandler _handler;
 
     char         _readBuff[BUFF_SIZE];
-    HTTPParser   _request;
-    HTTPResponse _response;
+    char         _sendBuff[BUFF_SIZE];
 
     std::string  _strFD;
     ClientState  _state;

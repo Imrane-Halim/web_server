@@ -9,6 +9,7 @@ std::string intToString(int value)
 
 Client::Client(Socket &socket, ServerConfig &config, FdManager &fdm):
     EventHandler(config, fdm, socket),
+    _handler(config),
     _strFD(intToString(_socket.get_fd())),
     _state(ST_READING)
 {}
@@ -51,7 +52,7 @@ void    Client::onWritable()
     }
 }
 
-bool    Client::_readData()
+bool Client::_readData()
 {
     if (_state != ST_READING)
         return false;
@@ -65,19 +66,20 @@ bool    Client::_readData()
     }
     if (size == 0)
     {
-        logger.warning("Connetion closed on fd: " + _strFD);
+        logger.warning("Connection closed on fd: " + _strFD);
         _state = ST_CLOSED;
         return false;
     }
     _readBuff[size] = '\0';
-    _request.addChunk(_readBuff, size);
-    if (_request.isError())
+    _handler.feed(_readBuff, size);
+    
+    if (_handler.isError())
     {
         logger.debug("Parsing error on client fd: " + _strFD);
         _state = ST_PARSEERROR;
         return false;
     }
-    if (_request.isComplete())
+    if (_handler.isReqComplete())
     {
         _state = ST_PROCESSING;
         return false;
@@ -85,10 +87,9 @@ bool    Client::_readData()
 
     return true;
 }
-bool    Client::_sendData()
+bool Client::_sendData()
 {
-    char    buff[BUFF_SIZE];
-    ssize_t toSend = _response.readNextChunk(buff, BUFF_SIZE);
+    ssize_t toSend = _handler.readNextChunk(_sendBuff, BUFF_SIZE);
     if (toSend < 0)
     {
         logger.error("Error on Client fd: " + _strFD);
@@ -101,7 +102,8 @@ bool    Client::_sendData()
         _state = ST_SENDCOMPLETE;
         return false;
     }
-    ssize_t sent = _socket.send(buff, toSend, 0);
+    
+    ssize_t sent = _socket.send(_sendBuff, toSend, 0);
     if (sent < 0)
     {
         logger.error("Can't send data on client fd: " + _strFD);
@@ -113,26 +115,27 @@ bool    Client::_sendData()
         logger.warning("Partial send on client fd: " + _strFD);
         return true;
     }
-    if (_response.isComplete())
+    
+    if (_handler.isResComplete())
     {
         logger.debug("Sending response complete on client fd: " + _strFD);
         _state = ST_SENDCOMPLETE;
         return false;
     }
+    
     return true;
 }
 
 void    Client::_closeConnection()
 {
-    _response.closeFile();
+    // _response.closeFile();
     _socket.close();
     _fd_manager.remove(get_fd());
 }
 
 void    Client::reset()
 {
-    _request.reset();
-    _response.reset();
+    _handler.reset();
     _state = ST_READING;
     _fd_manager.modify(this, EPOLLIN);
 }
@@ -152,30 +155,12 @@ void    Client::_processError()
 void Client::_processRequest()
 {
     _keepAlive = _shouldKeepAlive();
-    // Add basic headers
-    _response.startLine();
-    _response.addHeader("Server", "WebServ/1.0");
-    _response.addHeader("Connection", _keepAlive ? "keep-alive" : "close");
-    _response.addHeader("content-type", "text/html");
-    
-    // Add logging to verify file attachment
-    if (!_response.attachFile("./www/index.html"))
-        logger.error("Failed to attach file ./www/index.html on fd: " + _strFD);
-        // Fallback to error response
-        // _buildErrorResponse(404, "File not found");
-    else
-        logger.debug("Successfully attached file on fd: " + _strFD);
-    
+    _handler.processRequest();
     _state = ST_SENDING;
     _fd_manager.modify(this, EPOLLOUT);
 }
 
 bool    Client::_shouldKeepAlive()
 {
-    std::string conn = _request.getHeader("connection");
-    std::transform(conn.begin(), conn.end(), conn.begin(), ::tolower);
-
-    if (_request.getVers() == "HTTP/1.1")
-        return conn != "close";
-    return conn == "keep-alive";
+    return _handler.keepAlive();
 }
