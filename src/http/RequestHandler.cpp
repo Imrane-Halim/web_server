@@ -31,25 +31,26 @@ bool    RequestHandler::keepAlive()
 
 void    RequestHandler::processRequest()
 {
-    _keepAlive = keepAlive();  // Add this line - you forgot to set it!
-    _response.startLine();
-    _response.addHeader("Server", "WebServ/1.0");
-    _response.addHeader("Connection", _keepAlive ? "keep-alive" : "close");
+    _keepAlive = keepAlive();
+    // todo
+    // _response.startLine();
+    // _response.addHeader("Server", "WebServ/1.0");
+    // _response.addHeader("Connection", _keepAlive ? "keep-alive" : "close");
     
-    RouteMatch match = _router.getMatch(_request.getUri(), _request.getMethod());
-    std::string path;
-    if (match.lc)
-    {
-        if (_request.getUri() == "/")
-            path = match.lc->root + '/' + match.lc->indexFiles[0];
-        else
-            path = match.lc->root + _request.getUri();
-    }
-    // Add logging to verify file attachment
-    if (!_response.attachFile(path)) // it already handles conent-len and content-type
-        logger.error("Failed to attach file " + path + " on fd: ");
-        // Fallback to error response
-        // _buildErrorResponse(404, "File not found");
-    else
-        logger.debug("Successfully attached file on fd: ");
+    // RouteMatch match = _router.getMatch(_request.getUri(), _request.getMethod());
+    // std::string path;
+    // if (match.lc)
+    // {
+    //     if (_request.getUri() == "/")
+    //         path = match.lc->root + '/' + match.lc->indexFiles[0];
+    //     else
+    //         path = match.lc->root + _request.getUri();
+    // }
+    // // Add logging to verify file attachment
+    // if (!_response.attachFile(path)) // it already handles conent-len and content-type
+    //     logger.error("Failed to attach file " + path + " on fd: ");
+    //     // Fallback to error response
+    //     // _buildErrorResponse(404, "File not found");
+    // else
+    //     logger.debug("Successfully attached file on fd: ");
 }
