@@ -160,8 +160,8 @@ bool Routing::_isDirectory(const string &path)
 
 bool Routing::_isFile(const string &path)
 {
-    (void)path;
-    return (false);
+    struct stat st;
+    return (stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode));
 }
 
 string Routing::_getRoot(Location &loc)
