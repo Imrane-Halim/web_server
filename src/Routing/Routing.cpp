@@ -132,8 +132,7 @@ bool Routing::_isFile(const string &path)
 
 string Routing::_getRoot(Location &loc)
 {
-    (void)loc;
-    return (string());
+    return (loc.root.empty() ? _server.root : loc.root);
 }
 
 size_t Routing::_getMaxBodySize(Location &loc)
