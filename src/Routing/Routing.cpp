@@ -73,9 +73,16 @@ string Routing::_cleanPath(const string &path)
 
 string Routing::_joinPath(const string &base, const string &path)
 {
-    (void)base;
-    (void)path;
-    return (string());
+    if (base.empty())
+        return (path);
+
+    if (path.empty())
+        return (base);
+
+    if (base[base.size() - 1] == '/')
+        return (base + (path[0] == '/' ? path.substr(1) : path));
+
+    return (base + (path[0] == '/' ? path : "/" + path));
 }
 
 string Routing::_getRelativePath(const string &path, const string &route)
