@@ -10,6 +10,7 @@
 #include <cstring>
 #include <sstream>
 #include "Routing.hpp"
+#include "RingBuffer.hpp"
 
 // helper macro to stringify values
 #define SSTR(x) static_cast<std::ostringstream &>((std::ostringstream() << x)).str()
@@ -19,18 +20,13 @@
 
 class HTTPResponse
 {
-    std::string _response; // headers + optional small body
-    size_t _resp_offset;   // position in _response when sending
+    RingBuffer _response;   // headers + optional small body
 
-    int _file_fd;       // file descriptor (if serving file)
-    size_t _file_size;  // total file size
-    size_t _bytes_sent; // bytes sent from file
+    int     _file_fd;       // file descriptor (if serving file)
+    size_t  _file_size;     // total file size
+    size_t  _bytes_sent;    // bytes sent from file
 
-    // prevent fd issues
-    HTTPResponse(const HTTPResponse &other);
-    HTTPResponse &operator=(const HTTPResponse &other);
-
-    std::string _getContentType(const std::string &filepath);
+    const std::string _getContentType(const std::string &filepath);
 
 public:
     HTTPResponse();
@@ -38,9 +34,8 @@ public:
 
     void    startLine(int code = 200, const std::string &status = "OK", const std::string &version = "HTTP/1.1");
 
-    // returns the class itself. todo shit like: res.add().add() ...
-    HTTPResponse &addHeader(const std::string &name, const std::string &value);
-    void endHeaders(); // marks end of headers
+    void addHeader(const std::string &name, const std::string &value);
+    void endHeaders();
 
     // set body directly (for small responses)
     void setBody(const std::string &content);

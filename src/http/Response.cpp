@@ -1,7 +1,7 @@
 #include "Response.hpp"
 
 HTTPResponse::HTTPResponse():
-    _resp_offset(0),
+    _response(BUFF_SIZE * 2),
     _file_fd(-1),
     _file_size(0),
     _bytes_sent(0)
@@ -12,35 +12,22 @@ HTTPResponse::~HTTPResponse()
     closeFile();
 }
 
-HTTPResponse    &HTTPResponse::addHeader(const std::string& k, const std::string& v)
+void    HTTPResponse::addHeader(const std::string& k, const std::string& v)
 {
-    if (k.empty() || v.empty()) // menas end of header
-    {
-        _response += CRLF;
-        return *this;
-    }
-
-    _response += k + ": " + v + CRLF;
-
-    return *this;
+    std::string line = k + ": " + v + CRLF;
+    _response.write(line.data(), line.length());
 }
-
 void    HTTPResponse::endHeaders()
 {
-    _response += CRLF;
+    _response.write(CRLF, sizeof(CRLF));
 }
 
 void    HTTPResponse::setBody(const std::string& data)
 {
-    // ensure headers are properly terminated before adding body
-    if (_response.size() && _response.rfind(CRLF CRLF) != _response.size() - 4)
-        _response += CRLF;  // blank line between headers and body
-  //  addHeader("Content-Length", SSTR(data.size()));
-    //endHeaders();
-    _response += data;
+    _response.write(data.data(), data.length());
 }
 
-bool HTTPResponse::attachFile(const std::string& filepath) {
+bool    HTTPResponse::attachFile(const std::string& filepath) {
     struct stat f;
     if (stat(filepath.c_str(), &f) != 0)
         return false;
@@ -56,7 +43,6 @@ bool HTTPResponse::attachFile(const std::string& filepath) {
     
     return true;
 }
-
 void    HTTPResponse::closeFile()
 {
     if (_file_fd != -1)
@@ -74,21 +60,9 @@ ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
         return 0;
 
     // Send from the in-memory response buffer first
-    if (_resp_offset < _response.size())
-    {
-        size_t  left = _response.size() - _resp_offset;
-        size_t  toCopy = std::min(size, left);
-        std::memcpy(buff, _response.data() + _resp_offset, toCopy);
-        _resp_offset += toCopy;
-
-        if (_resp_offset >= _response.size())
-        {
-            _resp_offset = 0;
-            _response.clear();
-        }
-
-        return toCopy;
-    }
+    size_t toSend = _response.read(buff, size);
+    if (toSend)
+        return toSend;
 
     // If the entire file has been sent, we're done
     if (_bytes_sent >= _file_size)
@@ -107,7 +81,7 @@ ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
 
 bool    HTTPResponse::isComplete() const
 {
-    if (_response.size())
+    if (!_response.getSize())
         return false;
     if (_file_size != _bytes_sent)
         return false;
@@ -117,19 +91,16 @@ bool    HTTPResponse::isComplete() const
 void    HTTPResponse::reset()
 {
     _response.clear();
-    _resp_offset = 0;
     closeFile();
 }
 
 void    HTTPResponse::startLine(int code, const std::string &status, const std::string &version)
 {
-    _response += version + ' ';
-    _response += SSTR(code) + ' ';
-    _response += status;
-    _response += CRLF;
+    std::string line = version + ' ' + SSTR(code) + ' ' + status + CRLF;
+    _response.write(line.data(), line.length());
 }
 
-std::string HTTPResponse::_getContentType(const std::string &filepath)
+const std::string HTTPResponse::_getContentType(const std::string &filepath)
 {
     size_t dotPos = filepath.rfind('.');
     if (dotPos == std::string::npos)
@@ -139,22 +110,22 @@ std::string HTTPResponse::_getContentType(const std::string &filepath)
     
     // Text types
     if (ext == ".html" || ext == ".htm") return "text/html";
-    if (ext == ".css") return "text/css";
-    if (ext == ".js") return "application/javascript";
+    if (ext == ".css")  return "text/css";
+    if (ext == ".js")   return "application/javascript";
     if (ext == ".json") return "application/json";
-    if (ext == ".xml") return "application/xml";
-    if (ext == ".txt") return "text/plain";
+    if (ext == ".xml")  return "application/xml";
+    if (ext == ".txt")  return "text/plain";
     
     // Image types
     if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
-    if (ext == ".png") return "image/png";
-    if (ext == ".gif") return "image/gif";
-    if (ext == ".svg") return "image/svg+xml";
-    if (ext == ".ico") return "image/x-icon";
+    if (ext == ".png")  return "image/png";
+    if (ext == ".gif")  return "image/gif";
+    if (ext == ".svg")  return "image/svg+xml";
+    if (ext == ".ico")  return "image/x-icon";
     if (ext == ".webp") return "image/webp";
     
     // Font types
-    if (ext == ".woff") return "font/woff";
+    if (ext == ".woff")  return "font/woff";
     if (ext == ".woff2") return "font/woff2";
     if (ext == ".ttf") return "font/ttf";
     if (ext == ".otf") return "font/otf";
