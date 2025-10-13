@@ -164,8 +164,7 @@ string Routing::_getRoot(Location &loc)
 
 size_t Routing::_getMaxBodySize(Location &loc)
 {
-    (void)loc;
-    return size_t();
+    return (loc.maxBody ? loc.maxBody : _server.maxBody);
 }
 
 vector<string> Routing::_getIndexFiles(Location &loc)
