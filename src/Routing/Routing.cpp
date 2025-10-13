@@ -147,8 +147,8 @@ bool Routing::_isPathExists(const string &path)
 
 bool Routing::_isDirectory(const string &path)
 {
-    (void)path;
-    return (false);
+    struct stat st;
+    return (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode));
 }
 
 bool Routing::_isFile(const string &path)
