@@ -67,8 +67,28 @@ string Routing::_resolvePath(Location &loc, const string &reqPath)
 
 string Routing::_cleanPath(const string &path)
 {
-    (void)path;
-    return (string());
+    std::vector<std::string> parts;
+    std::stringstream ss(path);
+    std::string item;
+
+    while (std::getline(ss, item, '/'))
+    {
+        if (item == "" || item == ".")
+            continue;
+        if (item == ".." && !parts.empty())
+            parts.pop_back();
+        else if (item != "..")
+            parts.push_back(item);
+    }
+
+    std::string normalized = "/";
+    for (size_t i = 0; i < parts.size(); ++i)
+    {
+        normalized += parts[i];
+        if (i < parts.size() - 1)
+            normalized += "/";
+    }
+    return (normalized);
 }
 
 string Routing::_joinPath(const string &base, const string &path)
