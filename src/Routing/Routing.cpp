@@ -45,8 +45,15 @@ Location *Routing::_findLocation(const string &path)
 
 bool Routing::_matchesRoute(const string &path, const string &route)
 {
-    (void)path;
-    (void)route;
+    if (route == "/")
+        return (true);
+
+    if (path.compare(0, route.size(), route) == 0)
+    {
+        if (path.size() == route.size() || path[route.size()] == '/')
+            return (true);
+    }
+
     return (false);
 }
 
