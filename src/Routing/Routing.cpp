@@ -80,9 +80,10 @@ string Routing::_joinPath(const string &base, const string &path)
 
 string Routing::_getRelativePath(const string &path, const string &route)
 {
-    (void)path;
-    (void)route;
-    return (string());
+    if (path.compare(0, route.size(), route) == 0)
+        return (path.substr(route.size()));
+
+    return (path);
 }
 
 bool Routing::_isCGI(Location &loc)
