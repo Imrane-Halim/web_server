@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstring>
+#include <string>
 
 class RingBuffer
 {
@@ -21,6 +22,12 @@ public:
 
     size_t  getCapacity(void) const;
     size_t  getSize(void) const;            // Get current data size
+
+    bool    isFull(void) const;
+    bool    isEmpty(void) const;
+
+    void    advanceWrite(size_t size);
+    void    advanceRead(size_t size);
 
     void    clear(void);
 };

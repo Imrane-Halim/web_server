@@ -3,25 +3,26 @@
 #include <algorithm>
 
 RingBuffer::RingBuffer(size_t size):
-    _buff(size),
     _head(0),
     _tail(0),
     _capacity(size),
     _size(0)
-{}
+{
+    _buff.reserve(size);
+}
 
-size_t RingBuffer::getCapacity() const { return _capacity; }
+size_t  RingBuffer::getCapacity() const { return _capacity; }
 
-size_t RingBuffer::getSize() const { return _size; }
+size_t  RingBuffer::getSize() const { return _size; }
 
-void RingBuffer::clear()
+void    RingBuffer::clear()
 {
     _head = 0;
     _tail = 0;
     _size = 0;
 }
 
-size_t RingBuffer::write(const char *buff, size_t size)
+size_t  RingBuffer::write(const char *buff, size_t size)
 {
     if (!size) return 0;
 
@@ -52,8 +53,7 @@ size_t RingBuffer::write(const char *buff, size_t size)
     }
     return size;
 }
-
-size_t RingBuffer::read(char *buff, size_t size)
+size_t  RingBuffer::read(char *buff, size_t size)
 {
     // read only what's available
     size_t toRead = (size < _size) ? size : _size;
@@ -72,8 +72,7 @@ size_t RingBuffer::read(char *buff, size_t size)
     _size -= toRead;
     return toRead;
 }
-
-size_t RingBuffer::peek(char *buff, size_t size)
+size_t  RingBuffer::peek(char *buff, size_t size)
 {
     // read only what's available
     size_t toRead = (size < _size) ? size : _size;
@@ -89,6 +88,27 @@ size_t RingBuffer::peek(char *buff, size_t size)
     }
 
     return toRead;
+}
+
+bool    RingBuffer::isFull() const { return _size == _capacity; }
+bool    RingBuffer::isEmpty() const { return !_size; }
+
+void    RingBuffer::advanceRead(size_t size)
+{
+    _tail = (_tail + size) % _capacity;
+    _size -= size <= _capacity ? size : _size;
+}
+
+void    RingBuffer::advanceWrite(size_t size)
+{
+    _head = (_head + size) % _capacity;
+    _size += size;
+    if (_size > _capacity)
+    {
+        size_t overflow = _size - _capacity;
+        _tail = (_tail + overflow) % _capacity;
+        _size = _capacity;
+    }
 }
 
 // int main()
