@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <stdexcept>
-
+#include "Logger.hpp"
 Socket::Socket(const Socket &other) : _fd(other._fd), _event(other._event), _epoll(other._epoll) {}
 
 void Socket::register_epoll(Epoll *epoll)
@@ -29,19 +29,21 @@ Socket::Socket()
     create_socket(AF_INET, SOCK_STREAM, 0);
 }
 
-Socket::Socket(fromFdTag, int fd)
+Socket::Socket(int fd)
 {
     _fd = fd;
 }
 
-Socket::Socket(int _socket_domain, int _socket_type, int _protocol)
-{
-    create_socket(_socket_domain, _socket_type, _protocol);
-}
+std::string intToString(int value);
 
 Socket::~Socket() 
 {
     // Note: Not calling close() here to avoid issues with copied sockets
+    Logger logger;
+    logger.debug("Socket destructor called for fd: " + intToString(_fd));
+    if (_fd != -1) {
+        ::close(_fd);
+    }
 }
 
 void Socket::bind()
@@ -73,7 +75,7 @@ void Socket::listen()
     }
 }
 
-Socket Socket::accept()
+int Socket::accept()
 {
     struct sockaddr_in client_addr;
     socklen_t client_len = sizeof(client_addr);
@@ -83,7 +85,7 @@ Socket Socket::accept()
         throw std::runtime_error("Failed to accept connection");
     }
     
-    return Socket(fromFdTag(), client_fd);
+    return client_fd;
 }
 
 void Socket::connect(std::string ip, int port)

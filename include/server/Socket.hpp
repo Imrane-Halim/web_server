@@ -26,15 +26,14 @@ private:
 public:
     Socket();
     Socket(const Socket &other);
-    Socket(fromFdTag, int fd);
+    Socket(int fd);
     Socket(int fd, uint32_t event) : _fd(fd), _event(event), _epoll(NULL) {};
-    Socket(int _socket_domain, int _socket_type = SOCK_STREAM, int _protocol = 0);
     ~Socket();
     void bind();
     void bind(struct sockaddr_in address);
     void listen();
     void set_non_blocking();
-    Socket accept();
+    int accept();
     void connect(std::string ip, int port);
     void connect(struct sockaddr_in address);
     void connect(std::string ip, int port, sa_family_t family);

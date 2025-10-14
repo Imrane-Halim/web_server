@@ -23,6 +23,7 @@ enum ClientState
 
 class Client: public EventHandler
 {
+    Socket _socket;
     Logger logger;
     RequestHandler _handler;
 
@@ -45,7 +46,7 @@ class Client: public EventHandler
     bool    _sendData(); // returns true if more data needs to be sent
 
 public:
-    Client(Socket &socket, ServerConfig &config, FdManager &fdm);
+    Client(int socket_fd, ServerConfig &config, FdManager &fdm);
     ~Client();
 
     void    reset();

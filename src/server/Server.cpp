@@ -46,11 +46,10 @@ void Server::onReadable()
     
     try {
         // Accept new connection
-        Socket client_socket = _socket.accept();
-        client_socket.set_non_blocking();
+        int client_socket = _socket.accept();
         
-        logger.info("New client connection accepted on fd: " + SSTR(client_socket.get_fd()));
-        
+        logger.info("New client connection accepted on fd: " + SSTR(client_socket));
+
         // Create new Client handler
         Client* client = new Client(client_socket, _config, _fd_manager);
         

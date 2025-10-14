@@ -8,6 +8,7 @@
 class Server : public EventHandler
 {
     private:
+        Socket _socket;
     public:
         Server(ServerConfig &config, FdManager &fdm);
         ~Server();

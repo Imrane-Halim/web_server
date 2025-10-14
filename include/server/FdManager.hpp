@@ -11,7 +11,13 @@ class FdManager {
     std::map<int, EventHandler*> fd_map; 
 public:
     FdManager(Epoll &epoll) : _epoll(epoll) {}
-    ~FdManager() {}
+    ~FdManager() 
+    {
+        for (std::map<int, EventHandler*>::iterator it = fd_map.begin(); it != fd_map.end(); ++it) {
+            delete it->second;
+        }
+        fd_map.clear();
+    }
     void add(int fd, EventHandler* handler, int events)
     {
         _epoll.add_fd(fd, events);
@@ -23,6 +29,7 @@ public:
         if (it != fd_map.end()) 
         {
             _epoll.remove_fd(fd);
+            delete it->second;
             fd_map.erase(it);
         }
     }

@@ -7,13 +7,20 @@ std::string intToString(int value)
     return oss.str();
 }
 
-Client::Client(Socket &socket, ServerConfig &config, FdManager &fdm):
-    EventHandler(config, fdm, socket),
+Client::Client(int socket_fd, ServerConfig &config, FdManager &fdm) :
+    EventHandler(config, fdm),
+    _socket(socket_fd),
     _handler(config),
-    _strFD(intToString(_socket.get_fd())),
+    _strFD(intToString(socket_fd)),
     _state(ST_READING)
-{}
-Client::~Client() { _socket.close(); }
+{
+    _socket.set_non_blocking();
+}
+Client::~Client() 
+{ 
+    Logger logger;
+    logger.info("Client destructor called for fd: " + _strFD);
+}
 
 int Client::get_fd() const { return _socket.get_fd(); }
 
@@ -129,7 +136,6 @@ bool Client::_sendData()
 void    Client::_closeConnection()
 {
     // _response.closeFile();
-    _socket.close();
     _fd_manager.remove(get_fd());
 }
 
