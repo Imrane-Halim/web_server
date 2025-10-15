@@ -130,7 +130,7 @@ string Routing::_cleanPath(const string &path)
 
     while (std::getline(ss, item, '/'))
     {
-        if (item == "" || item == ".")
+        if (item == "")
             continue;
         if (item == ".." && !parts.empty())
             parts.pop_back();
@@ -138,7 +138,7 @@ string Routing::_cleanPath(const string &path)
             parts.push_back(item);
     }
 
-    std::string normalized = "/";
+    std::string normalized = "";
     for (size_t i = 0; i < parts.size(); ++i)
     {
         normalized += parts[i];
