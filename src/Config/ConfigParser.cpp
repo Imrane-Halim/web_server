@@ -221,74 +221,68 @@ vector<string> split(const string &str)
     if (!current.empty())
         tokens.push_back(current);
 
-    return tokens;
+    return (tokens);
 }
 
 /**
- * @brief Prints a syntax error message for the configuration file.
- *
- * This function outputs a formatted error message to std::cerr indicating
- * the file name, line number, and the offending line where the syntax error
- * occurred.
+ * @brief Throws a runtime_error with a formatted syntax error message.
  *
  * @param str The line content that caused the error.
- * @param fname The name of the configuration file being parsed.
- * @param lnNbr The line number where the error was detected.
- * @return Always returns 1 to indicate an error occurred.
+ * @param fname The name of the configuration file.
+ * @param lnNbr The line number where the error occurred.
  */
-short printError(string &str, const string &fname, size_t &lnNbr)
+void throwSyntaxError(string &str, const string &fname, size_t &lnNbr)
 {
-    cerr << "Webserv: syntax error in " << fname << " at line " << lnNbr << " → " << str << endl;
-    return (1);
+    ostringstream oss;
+    oss << "Webserv: syntax error in " << fname << " at line " << lnNbr << " → " << str;
+    throw (runtime_error(oss.str()));
 }
 
 /**
  * @brief Converts a numeric string to a size_t value.
  *
- * This function checks that the given string contains only digits and then
- * converts it to a size_t using atol. If any non-digit character is found,
- * it prints a syntax error using printError.
+ * Checks that the string contains only digits and converts it to size_t using atol.
+ * Throws a syntax error if the string is invalid.
  *
- * @param str The string representing a numeric value.
- * @param line The full line from the configuration file (used for error reporting).
- * @param fname The name of the configuration file.
- * @param lnNbr The line number in the configuration file.
- * @return The converted numeric value, or calls printError if the string is invalid.
+ * @param str Numeric string to convert.
+ * @param line Full line from the config file (for error reporting).
+ * @param fname Config file name.
+ * @param lnNbr Line number in the config file.
+ * @return Converted numeric value.
  */
 size_t myAtol(string str, string &line, const string &fname, size_t &lnNbr)
 {
     for (size_t i = 0; i < str.size(); i++)
     {
         if (!isdigit(str[i]))
-            return (printError(line, fname, lnNbr));
+            throwSyntaxError(line, fname, lnNbr);
     }
     return (atol(str.c_str()));
 }
 
 /**
- * @brief Parses and applies a single directive within a location block.
+ * @brief Parses and applies a single directive in a location block.
  *
- * This function examines the tokens of a configuration line and updates
- * the corresponding fields of the given Location object (locTmp). It handles
- * directives such as route, root, autoindex, client_max_body_size, redirect,
- * upload_store, cgi_pass, index, and methods.
+ * Updates the given Location object (locTmp) based on the directive tokens.
+ * Handles: route, root, autoindex, client_max_body_size, redirect, upload_store,
+ * cgi_pass, cgi_timeout, index, and methods.
  *
  * Validation:
- * - Ensures numeric values for client_max_body_size.
- * - Ensures methods are one of GET, POST, DELETE.
- * - Prevents duplicate entries in files and methods vectors.
+ * - Ensures numeric values for client_max_body_size and cgi_timeout.
+ * - Ensures methods are GET, POST, or DELETE.
+ * - Prevents duplicates in indexFiles and methods vectors.
  *
- * @param str The full line from the configuration file (used for error reporting).
+ * @param str Full line from the configuration file (for error reporting).
  * @param tokens Tokenized words of the line.
- * @param locTmp The Location object to be updated.
- * @param fname The name of the configuration file.
- * @param lnNbr The line number in the configuration file.
- * @return 0 if successful, 1 if a syntax error occurs.
+ * @param locTmp Location object to update.
+ * @param fname Configuration file name.
+ * @param lnNbr Line number in the configuration file.
+ * @return 0 on success; throws runtime_error on syntax errors.
  */
 short handleLocation(string str, vector<string> &tokens, Location &locTmp, const string &fname, size_t &lnNbr)
 {
     if (tokens.size() < 2)
-        return (printError(str, fname, lnNbr));
+        throwSyntaxError(str, fname, lnNbr);
 
     if (tokens.size() == 2 && tokens[0] == "route")
         locTmp.route = tokens[1];
@@ -303,7 +297,7 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
         else if (tokens[1] == "off")
             locTmp.autoindex = false;
         else
-            return (printError(str, fname, lnNbr));
+            throwSyntaxError(str, fname, lnNbr);
     }
 
     else if (tokens.size() == 2 && tokens[0] == "client_max_body_size")
@@ -329,7 +323,7 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
             for (size_t j = 0; j < locTmp.indexFiles.size(); j++)
             {
                 if (tokens[i] == locTmp.indexFiles[j])
-                    return printError(str, fname, lnNbr);
+                    throwSyntaxError(str, fname, lnNbr);
             }
             locTmp.indexFiles.push_back(tokens[i]);
         }
@@ -343,17 +337,17 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
             for (size_t j = 0; j < locTmp.methods.size(); j++)
             {
                 if (tokens[i] == locTmp.methods[j])
-                    return printError(str, fname, lnNbr);
+                    throwSyntaxError(str, fname, lnNbr);
             }
 
             if (tokens[i] != "GET" && tokens[i] != "POST" && tokens[i] != "DELETE")
-                return printError(str, fname, lnNbr);
+                throwSyntaxError(str, fname, lnNbr);
             locTmp.methods.push_back(tokens[i]);
         }
     }
 
     else
-        return (printError(str, fname, lnNbr));
+        throwSyntaxError(str, fname, lnNbr);
 
     return (0);
 }
@@ -377,18 +371,18 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
  * @param srvTmp The Server object to be updated.
  * @param fname The name of the configuration file.
  * @param lnNbr The line number in the configuration file.
- * @return 0 if successful, 1 if a syntax error occurs.
+ * @return 0 on success; throws runtime_error on syntax errors.
  */
 short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, const string &fname, size_t &lnNbr)
 {
     if (tokens.size() < 2)
-        return (printError(str, fname, lnNbr));
+        throwSyntaxError(str, fname, lnNbr);
 
     if (tokens.size() == 2 && tokens[0] == "host")
     {
         struct in_addr addr;
         if (!inet_aton(tokens[1].c_str(), &addr))
-            return (printError(str, fname, lnNbr));
+            throwSyntaxError(str, fname, lnNbr);
         srvTmp.host = tokens[1];
     }
 
@@ -396,7 +390,7 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
     {
         srvTmp.port = myAtol(tokens[1], str, fname, lnNbr);
         if (srvTmp.port > 65535)
-            return (printError(str, fname, lnNbr));
+            throwSyntaxError(str, fname, lnNbr);
     }
 
     else if (tokens.size() == 2 && tokens[0] == "server_name")
@@ -416,7 +410,7 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
             for (size_t j = 0; j < srvTmp.indexFiles.size(); j++)
             {
                 if (tokens[i] == srvTmp.indexFiles[j])
-                    return printError(str, fname, lnNbr);
+                    throwSyntaxError(str, fname, lnNbr);
             }
             srvTmp.indexFiles.push_back(tokens[i]);
         }
@@ -426,7 +420,7 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
         srvTmp.errors[myAtol(tokens[1], str, fname, lnNbr)] = tokens[2];
 
     else
-        return (printError(str, fname, lnNbr));
+        throwSyntaxError(str, fname, lnNbr);
 
     return (0);
 }
@@ -450,7 +444,7 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
  * @param fName The name of the configuration file (for error reporting).
  * @param lnNbr The current line number (for error reporting).
  * @param config Reference to the WebConfigFile object being populated.
- * @return 0 if successful, 1 if a syntax error occurs.
+ * @return 0 on success; throws runtime_error on syntax errors.
  */
 short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfigFile &config)
 {
@@ -467,7 +461,7 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
         (tokens.size() == 2 && tokens[0] == "server" && tokens[1] == "{"))
     {
         if (srvActive)
-            return printError(str, fName, lnNbr);
+            throwSyntaxError(str, fName, lnNbr);
         srvActive = true;
         srvTmp = ServerConfig();
         return (0);
@@ -477,7 +471,7 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
         (tokens.size() == 2 && tokens[0] == "location" && tokens[1] == "{"))
     {
         if (!srvActive || inLocation)
-            return printError(str, fName, lnNbr);
+            throwSyntaxError(str, fName, lnNbr);
         inLocation = true;
         locTmp = Location(srvTmp);
         return (0);
@@ -488,7 +482,7 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
         if (inLocation)
         {
             if (locTmp.route == "")
-                return printError(str, fName, lnNbr);
+                throwSyntaxError(str, fName, lnNbr);
             srvTmp.locations.push_back(locTmp);
             inLocation = false;
         }
@@ -504,59 +498,63 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
             srvActive = false;
         }
         else
-            return printError(str, fName, lnNbr);
+            throwSyntaxError(str, fName, lnNbr);
         return (0);
     }
 
     if (inLocation)
-        return handleLocation(str, tokens, locTmp, fName, lnNbr);
+        return (handleLocation(str, tokens, locTmp, fName, lnNbr));
     else if (srvActive)
-        return handleServer(str, tokens, srvTmp, fName, lnNbr);
+        return (handleServer(str, tokens, srvTmp, fName, lnNbr));
     else
-        return printError(str, fName, lnNbr);
+        throwSyntaxError(str, fName, lnNbr);
 
     return (0);
 }
 
 /**
- * @brief Constructs a WebConfigFile by parsing a configuration file.
+ * @brief Constructs a WebConfigFile object by parsing a configuration file.
  *
- * This constructor reads the configuration file line by line, removes
- * comments, trims spaces, and delegates the processing of each line
- * to handleDirective. It populates the internal vector of Server
- * objects based on the configuration.
+ * This constructor opens and reads the specified configuration file line by line.
+ * It removes comments, trims unnecessary spaces, and delegates the interpretation
+ * of each valid line to @ref handleDirective. Based on the parsed data, it fills
+ * the internal list of ServerConfig objects.
  *
  * Behavior:
- * - Exits the program with an error if the file cannot be opened.
- * - Exits the program with an error if the configuration is empty.
- * - Exits the program with an error if any line fails to parse.
+ * - Throws a runtime_error if the file cannot be opened.
+ * - Throws a runtime_error if the configuration file is empty.
+ * - Throws a runtime_error if any line fails to parse.
  *
- * @param fName The path to the configuration file to read.
+ * @param fName The path to the configuration file.
  */
 WebConfigFile::WebConfigFile(const string &fName)
 {
-    ifstream inputFile(fName.c_str());
-    if (!inputFile.is_open())
-    {
-        cerr << "Error: Cannot open config file " << fName << endl;
-        exit(1);
-    }
+    _inputFile.open(fName.c_str());
+    if (!_inputFile.is_open())
+        throw runtime_error("Error: Cannot open config file " + fName);
+
     string currentLine;
     size_t lnNbr = 0;
-    while (getline(inputFile, currentLine))
+
+    while (getline(_inputFile, currentLine))
     {
         ++lnNbr;
         currentLine = removeComment(currentLine);
         if (currentLine.empty())
             continue;
 
-        if (handleDirective(currentLine, fName, lnNbr, *this))
-            exit(1);
+        handleDirective(currentLine, fName, lnNbr, *this);
     }
+
     if (lnNbr == 0)
-    {
-        cerr << "Error: Configuration file is empty" << endl;
-        exit(1);
-    }
-    inputFile.close();
+        throw runtime_error("Error: Configuration file is empty " + fName);
+}
+
+/**
+ * @brief Destructor that closes the configuration file if it is still open.
+ */
+WebConfigFile::~WebConfigFile()
+{
+    if (_inputFile.is_open())
+        _inputFile.close();
 }
