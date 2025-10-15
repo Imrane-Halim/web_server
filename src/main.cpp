@@ -81,80 +81,43 @@ int main(int ac, char **av)
     {
         WebConfigFile config(av[1]);
 
-        // Initialize logger
+        // // Initialize logger
         Logger logger;
         EventLoop eventLoop;
         std::vector<ServerConfig> servers = config.getServers();
 
-        Routing router(servers[0]);
+        // Store server pointers for proper lifetime management
+        std::vector<Server *> serverInstances;
 
-        string path = "/images/logo.png";
-        string method = "GET";
-
-        RouteMatch result = router.match(path, method);
-
-        if (result.isValidMatch())
+        for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it)
         {
-            cout << "\n\nfsPath: " << result.fsPath << "\n";
-            cout << "Script path: " << result.scriptPath << "\n";
-            cout << "PATH_INFO: " << result.pathInfo << "\n";
-            cout << "Is CGI: " << result.isCGI << "\n";
-            cout << "Is Redirect: " << result.isRedirect << "\n";
-            cout << "Is Directory: " << result.isDirectory << "\n";
-            cout << "Autoindex: " << result.autoIndex << "\n";
-            cout << "Upload dir: " << result.uploadDir << "\n";
-            cout << "Redirect URL: " << result.redirectUrl << "\n";
-            cout << "Max body size: " << result.maxBodySize << "\n";
-
-            cout << "Index files: ";
-            for (size_t i = 0; i < result.indexFiles.size(); i++)
-                cout << result.indexFiles[i] << " ";
-            cout << "\n";
-
-            cout << "Allowed methods: " << router.getAllowedMethodsStr(*result.location) << "\n\n\n"
-                 << endl;
+            Server *server = new Server(*it, eventLoop.fd_manager);
+            serverInstances.push_back(server);
+            eventLoop.fd_manager.add(server->get_fd(), server, EPOLLIN);
+            logger.info("Configured server: " + it->name + " on " + it->host + ":" + intToString(it->port));
         }
-        else
-            cout << "No matching location found or method not allowed.\n\n\n"
-                 << endl;
+        logger.info("Starting webserver...");
 
-        // // Initialize logger
-        // Logger logger;
-        // EventLoop eventLoop;
-        // std::vector<ServerConfig> servers = config.getServers();
+        // Setup signal handlers for graceful shutdown
+        setup_signal_handlers();
+        logger.info("Signal handlers configured");
 
-        // // Store server pointers for proper lifetime management
-        // std::vector<Server *> serverInstances;
+        // Print startup message
+        std::cout << "=== Webserver Starting ===" << std::endl;
+        std::cout << "Press Ctrl+C to stop the server gracefully" << std::endl;
+        std::cout << "Listening for connections..." << std::endl;
 
-        // for (std::vector<ServerConfig>::iterator it = servers.begin(); it != servers.end(); ++it)
-        // {
-        //     Server *server = new Server(*it, eventLoop.fd_manager);
-        //     serverInstances.push_back(server);
-        //     eventLoop.fd_manager.add(server->get_fd(), server, EPOLLIN);
-        //     logger.info("Configured server: " + it->name + " on " + it->host + ":" + intToString(it->port));
-        // }
-        // logger.info("Starting webserver...");
+        // Start the event loop
+        logger.info("Starting event loop");
+        eventLoop.run();
 
-        // // Setup signal handlers for graceful shutdown
-        // setup_signal_handlers();
-        // logger.info("Signal handlers configured");
-
-        // // Print startup message
-        // std::cout << "=== Webserver Starting ===" << std::endl;
-        // std::cout << "Press Ctrl+C to stop the server gracefully" << std::endl;
-        // std::cout << "Listening for connections..." << std::endl;
-
-        // // Start the event loop
-        // logger.info("Starting event loop");
-        // eventLoop.run();
-
-        // // Cleanup servers after event loop exits
-        // logger.info("Cleaning up servers...");
-        // for (std::vector<Server *>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
-        // {
-        //     eventLoop.fd_manager.remove((*it)->get_fd());
-        //     delete *it;
-        // }
+        // Cleanup servers after event loop exits
+        logger.info("Cleaning up servers...");
+        for (std::vector<Server *>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
+        {
+            eventLoop.fd_manager.remove((*it)->get_fd());
+            delete *it;
+        }
 
         // This point should not be reached unless event_loop exits
         logger.info("Event loop exited");
