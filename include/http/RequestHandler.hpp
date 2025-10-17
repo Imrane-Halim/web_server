@@ -33,6 +33,22 @@ class RequestHandler
     void        _serveDict(const RouteMatch& match);
     std::string _getDictListing(const std::string& path);
 
+    struct fileInfo
+    {
+        std::string name;
+        struct stat data;
+        bool operator<(const fileInfo& other) const
+        {
+            bool thisIsDir = S_ISDIR(data.st_mode);
+            bool otherIsDir = S_ISDIR(other.data.st_mode);
+
+            if (thisIsDir != otherIsDir)
+                return thisIsDir > otherIsDir;
+
+            return name < other.name;
+        }
+    };
+    
 public:
     RequestHandler(ServerConfig &config);
     ~RequestHandler();

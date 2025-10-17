@@ -154,6 +154,106 @@ void    RequestHandler::_serveDict(const RouteMatch& path)
 
 std::string RequestHandler::_getDictListing(const std::string& path)
 {
-    (void)path;
-    return "todo";
+    DIR* dir = opendir(path.c_str());
+    if (!dir)
+    {
+        logger.error("Failed to open directory: " + path);
+        return "";
+    }
+
+    std::string reqUri = _request.getUri();
+
+    // final html code
+    std::string html;
+    html += "<!DOCTYPE html>\n";
+    html += "<html>\n<head>\n";
+    html += "<meta charset=\"utf-8\">\n";
+    html += "<title>Index of " + reqUri + "</title>\n";
+    html += "<style>\n";
+    html += "body { font-family: monospace; margin: 40px; }\n";
+    html += "h1 { border-bottom: 1px solid #ccc; padding-bottom: 10px; }\n";
+    html += "table { border-collapse: collapse; width: 100%; }\n";
+    html += "th { text-align: left; padding: 8px; border-bottom: 2px solid #ddd; }\n";
+    html += "td { padding: 8px; border-bottom: 1px solid #eee; }\n";
+    html += "tr:hover { background-color: #f5f5f5; }\n";
+    html += "a { text-decoration: none; color: #0066cc; }\n";
+    html += "a:hover { text-decoration: underline; }\n";
+    html += ".dir::before { content: '📁 '; }\n";
+    html += ".file::before { content: '📄 '; }\n";
+    html += ".info { color: #666; }\n";
+    html += "</style>\n";
+    html += "</head>\n<body>\n";
+    html += "<h3>WebSrv 1.0</h3>\n";
+    html += "<h1>Index of " + reqUri + "</h1>\n";
+    html += "<table>\n";
+    html += "<thead>\n<tr>\n";
+    html += "<th>Name</th>\n";
+    html += "<th class=\"info\">Size</th>\n";
+    html += "<th class=\"info\">Last Modified</th>\n";
+    html += "</tr>\n</thead>\n<tbody>\n";
+
+    // this will be used to store entries data
+    std::vector<fileInfo> entries;
+    
+    // collect entries
+    dirent *entry = NULL;
+    while ((entry = readdir(dir)))
+    {
+        fileInfo info;
+        info.name = entry->d_name;
+        if (info.name == ".")
+            continue;
+        std::string epath = path + '/' + info.name;
+        if (stat(epath.c_str(), &info.data) == 0)
+            entries.push_back(info);
+    }
+
+    // sort this shit, dicts first, then alphabitcly
+    std::sort(entries.begin(), entries.end());
+
+    // build the html
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        bool isDir = entries[i].data.st_mode & S_ISDIR(entries[i].data.st_mode);
+        std::string link = reqUri + entries[i].name;
+
+        std::string sizeStr = "-";
+        std::string dateStr = "-";
+
+        // format size
+        if (!isDir)
+        {
+            size_t fileSize = entries[i].data.st_size;
+            if (fileSize < 1024)
+                sizeStr = SSTR(fileSize) + "B";
+            else if (fileSize < 1024 * 1024)
+                sizeStr = SSTR(fileSize / 1024) + "KB";
+            else if (fileSize < 1024 * 1024 * 1024)
+                sizeStr = SSTR(fileSize / (1024 * 1024)) + "MB";
+            else
+                sizeStr = SSTR(fileSize / (1024 * 1024 * 1024)) + "GB";
+        }
+
+        // format time
+        char timeBuff[100];
+        struct tm *time = std::localtime(&entries[i].data.st_mtime);
+        if (time)
+        {
+            std::strftime(timeBuff, sizeof(timeBuff), "%Y-%m-%d %H:%M:%S", time);
+            dateStr = timeBuff;
+        }
+
+        html += "<tr>\n";
+        html += "<td><a href=\"" + link + "\" class=\"" + 
+            (isDir ? "dir" : "file") + "\">" + entries[i].name + 
+            (isDir ? "/" : "") + "</a></td>\n";
+        html += "<td class=\"size\">" + sizeStr + "</td>\n";
+        html += "<td class=\"date\">" + dateStr + "</td>\n";
+        html += "</tr>\n";
+    }
+
+    html += "</tbody>\n</table>\n";
+    html += "</body>\n</html>";
+
+    return html;
 }
