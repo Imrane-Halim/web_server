@@ -1,8 +1,9 @@
 #include "RequestHandler.hpp"
 
-RequestHandler::RequestHandler(ServerConfig &config):
+RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp):
     _router(config),
-    _response("HTTP/1.1")
+    _request(req),
+    _response(resp)
 {}
 RequestHandler::~RequestHandler() { reset(); }
 

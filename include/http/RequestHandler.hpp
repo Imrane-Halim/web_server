@@ -17,8 +17,8 @@ class RequestHandler
     Logger  logger;
     
     Routing         _router;
-    HTTPParser      _request;
-    HTTPResponse    _response;
+    HTTPParser      &_request;
+    HTTPResponse    &_response;
 
     bool            _keepAlive;
 
@@ -50,7 +50,7 @@ class RequestHandler
     };
     
 public:
-    RequestHandler(ServerConfig &config);
+    RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp);
     ~RequestHandler();
 
     void    feed(char* buff, size_t size);
