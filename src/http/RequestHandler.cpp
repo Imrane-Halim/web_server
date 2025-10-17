@@ -37,6 +37,7 @@ void    RequestHandler::processRequest()
     const RouteMatch& match = _router.match(_request.getUri(), _request.getMethod());
     if (!match.isValidMatch())
     {
+        logger.error("Not a valid match: " + _request.getUri());
         _sendErrorResponse(404);
         return;
     }
@@ -72,11 +73,21 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
     }
     if (!match.doesExist)
     {
+        logger.error("match does not exist: " + match.fsPath);
         _sendErrorResponse(404);
         return;
     }
     if (match.isDirectory)
     {
+        const std::string& uri = _request.getUri();
+        if (uri.empty() || uri[uri.length() - 1] != '/')
+        {
+            std::string redirectUri = uri + '/';
+            _response.startLine(301);
+            _response.addHeader("location", redirectUri);
+            _response.endHeaders();
+            return;
+        }
         _serveDict(match);
         return;
     }
