@@ -208,6 +208,7 @@ std::string RequestHandler::_getDictListing(const std::string& path)
         if (stat(epath.c_str(), &info.data) == 0)
             entries.push_back(info);
     }
+    closedir(dir);
 
     // sort this shit, dicts first, then alphabitcly
     std::sort(entries.begin(), entries.end());
