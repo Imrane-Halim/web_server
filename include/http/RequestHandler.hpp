@@ -22,6 +22,7 @@ class RequestHandler
 
     bool            _keepAlive;
 
+    void    _common(const RouteMatch& match);
     // i wanted to use an iteface for this, but it's overkill
     void    _handleGET(const RouteMatch& match);
     void    _handlePOST(const RouteMatch& match);
