@@ -42,11 +42,7 @@ void    RequestHandler::processRequest()
         _sendErrorResponse(404);
         return;
     }
-    if (match.isCGI)
-    {
-        // todo. don't touch for now
-        return;
-    }
+
     const std::string& method = _request.getMethod();
     if (method == "GET")
         _handleGET(match);
@@ -58,7 +54,7 @@ void    RequestHandler::processRequest()
         _sendErrorResponse(501);
 }
 
-void    RequestHandler::_handleGET(const RouteMatch& match)
+void    RequestHandler::_common(const RouteMatch& match)
 {
     // 1. Check redirects
     // 2. Check if path exists (404 if not)
@@ -86,6 +82,7 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
             std::string redirectUri = uri + '/';
             _response.startLine(301);
             _response.addHeader("location", redirectUri);
+            _response.addHeader("content-length", "0");
             _response.endHeaders();
             return;
         }
@@ -98,9 +95,15 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
         return;
     }
 }
+
+void    RequestHandler::_handleGET(const RouteMatch& match)
+{
+    _common(match);
+    // 1. just does common stuff like file or dict serving
+}
 void    RequestHandler::_handlePOST(const RouteMatch& match)
 {
-    (void)match;
+    _common(match);
     // 1. Check if upload is allowed (match.isUploadAllowed())
     // 2. Check body size against maxBodySize (413 if too large)
     // 3. If CGI: handle via CGI
@@ -109,7 +112,7 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
 }
 void    RequestHandler::_handleDELETE(const RouteMatch& match)
 {
-    (void)match;
+    _common(match);
     // 1. Check if path exists (404 if not)
     // 2. Check if it's a file (403 if directory)
     // 3. Check permissions
@@ -208,6 +211,7 @@ std::string RequestHandler::_getDictListing(const std::string& path)
         if (stat(epath.c_str(), &info.data) == 0)
             entries.push_back(info);
     }
+    closedir(dir);
 
     // sort this shit, dicts first, then alphabitcly
     std::sort(entries.begin(), entries.end());
