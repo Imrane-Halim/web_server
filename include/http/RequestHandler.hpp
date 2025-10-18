@@ -1,10 +1,13 @@
 #ifndef WEBSERV_REQ_HANDLER
 #define WEBSERV_REQ_HANDLER
 
+#include <dirent.h>
+
 #include "HTTPParser.hpp"
 #include "Response.hpp"
 #include "Routing.hpp"
 #include "Logger.hpp"
+#include "SpecialResponse.hpp"
 
 // the current methods we are required to handle
 // static const char* methods[] = { "GET", "POST", "DELETE" };
@@ -14,13 +17,40 @@ class RequestHandler
     Logger  logger;
     
     Routing         _router;
-    HTTPParser      _request;
-    HTTPResponse    _response;
+    HTTPParser      &_request;
+    HTTPResponse    &_response;
 
     bool            _keepAlive;
 
+    // i wanted to use an iteface for this, but it's overkill
+    void    _handleGET(const RouteMatch& match);
+    void    _handlePOST(const RouteMatch& match);
+    void    _handleDELETE(const RouteMatch& match);
+
+    // helper methods
+    void        _sendErrorResponse(int code);
+    void        _serveFile(const RouteMatch& path);
+    void        _serveDict(const RouteMatch& match);
+    std::string _getDictListing(const std::string& path);
+
+    struct fileInfo
+    {
+        std::string name;
+        struct stat data;
+        bool operator<(const fileInfo& other) const
+        {
+            bool thisIsDir = S_ISDIR(data.st_mode);
+            bool otherIsDir = S_ISDIR(other.data.st_mode);
+
+            if (thisIsDir != otherIsDir)
+                return thisIsDir > otherIsDir;
+
+            return name < other.name;
+        }
+    };
+    
 public:
-    RequestHandler(ServerConfig &config);
+    RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp);
     ~RequestHandler();
 
     void    feed(char* buff, size_t size);

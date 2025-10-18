@@ -20,25 +20,26 @@
 
 class HTTPResponse
 {
-    RingBuffer _response;   // headers + optional small body
+    std::string _version;
+    RingBuffer  _response;   // headers + optional small body
 
     int     _file_fd;       // file descriptor (if serving file)
     size_t  _file_size;     // total file size
     size_t  _bytes_sent;    // bytes sent from file
 
     const std::string _getContentType(const std::string &filepath);
-
+    const std::string _getStatus(int code);
 public:
-    HTTPResponse();
+    HTTPResponse(const std::string& version);
     ~HTTPResponse();
 
-    void    startLine(int code = 200, const std::string &status = "OK", const std::string &version = "HTTP/1.1");
+    void    startLine(int code);
 
     void addHeader(const std::string &name, const std::string &value);
     void endHeaders();
 
     // set body directly (for small responses)
-    void setBody(const std::string &content);
+    void setBody(const std::string& data, const std::string& type = "text/html");
 
     // serve file as body (sets Content-Length automatically)
     // this behavoir might change if we plan to support 'chunekd transfer'
