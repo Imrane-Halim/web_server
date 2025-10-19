@@ -16,6 +16,7 @@
 #include "Epoll.hpp"
 #include "RequestHandler.hpp"
 #include "FdManager.hpp"
+#include "Routing.hpp"
 
 #define BUFFER_SIZE 4096
 
@@ -29,7 +30,6 @@ class CGIHandler : public EventHandler
         Pipe _outputPipe;
         pid_t _pid;
         HTTPParser &_parser;
-        RequestHandler _requestHandler;
         bool _isRunning;
         const char *_bodyBuffer;
 
@@ -39,7 +39,7 @@ class CGIHandler : public EventHandler
         void initEnv(HTTPParser &parser);
         void initArgv();
     public:
-        CGIHandler(const std::string &scriptPath, HTTPParser &parser, ServerConfig &config, FdManager &fdm);
+        CGIHandler(const RouteMatch& info, HTTPParser &parser, ServerConfig &config, FdManager &fdm);
         ~CGIHandler() {}
         int get_fd();
         void start();

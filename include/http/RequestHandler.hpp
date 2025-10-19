@@ -8,6 +8,7 @@
 #include "Routing.hpp"
 #include "Logger.hpp"
 #include "SpecialResponse.hpp"
+#include "../cgi/CGIHandler.hpp"
 
 // the current methods we are required to handle
 // static const char* methods[] = { "GET", "POST", "DELETE" };
@@ -20,7 +21,10 @@ class RequestHandler
     HTTPParser      &_request;
     HTTPResponse    &_response;
 
+    CGIHandler      _cgi;
+
     bool            _keepAlive;
+    bool            _isCGI;
 
     void    _common(const RouteMatch& match);
     // i wanted to use an iteface for this, but it's overkill
@@ -33,6 +37,8 @@ class RequestHandler
     void        _serveFile(const RouteMatch& path);
     void        _serveDict(const RouteMatch& match);
     std::string _getDictListing(const std::string& path);
+
+    void        _handleCGI(const RouteMatch& match);
 
     struct fileInfo
     {
@@ -51,7 +57,7 @@ class RequestHandler
     };
     
 public:
-    RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp);
+    RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp, FdManager &fdManager);
     ~RequestHandler();
 
     void    feed(char* buff, size_t size);

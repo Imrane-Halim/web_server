@@ -1,9 +1,10 @@
 #include "RequestHandler.hpp"
 
-RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp):
+RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPResponse& resp, FdManager &fdManager):
     _router(config),
     _request(req),
-    _response(resp)
+    _response(resp),
+    _cgi()
 {}
 RequestHandler::~RequestHandler() { reset(); }
 
@@ -17,6 +18,7 @@ size_t  RequestHandler::readNextChunk(char *buff, size_t size) { return _respons
 
 void    RequestHandler::reset()
 {
+    _isCGI = false;
     _request.reset();
     _response.reset();
 }
@@ -42,6 +44,8 @@ void    RequestHandler::processRequest()
         _sendErrorResponse(404);
         return;
     }
+
+    _isCGI = match.isCGI;
 
     const std::string& method = _request.getMethod();
     if (method == "GET")
@@ -98,12 +102,18 @@ void    RequestHandler::_common(const RouteMatch& match)
 
 void    RequestHandler::_handleGET(const RouteMatch& match)
 {
-    _common(match);
     // 1. just does common stuff like file or dict serving
+    if (_isCGI)
+        _handleCGI(match);
+    else
+        _common(match);
 }
 void    RequestHandler::_handlePOST(const RouteMatch& match)
 {
-    _common(match);
+    if (_isCGI)
+        _handleCGI(match);
+    else
+        _common(match);
     // 1. Check if upload is allowed (match.isUploadAllowed())
     // 2. Check body size against maxBodySize (413 if too large)
     // 3. If CGI: handle via CGI
@@ -279,4 +289,11 @@ std::string RequestHandler::_getDictListing(const std::string& path)
     html += "</body>\n</html>";
 
     return html;
+}
+
+void    RequestHandler::_handleCGI(const RouteMatch& match)
+{
+    // idk pas the response to fill it or smth
+    // run the script, see RouteMatch for more info.. etc
+    _cgi.spawn();
 }
