@@ -36,6 +36,7 @@ ServerConfig::ServerConfig()
  * - route: empty string
  * - root: inherited from the given Server
  * - cgi, redirect, upload: empty strings
+ * - scriptInterpreter: empty (no interpreter defined by default)
  * - cgi_timeout: default to 1000 milliseconds (1 second), specifies the timeout for CGI script execution.
  * - autoindex: false
  * - methods: default to "GET"
@@ -49,6 +50,7 @@ Location::Location(ServerConfig server)
     route = "";
     root = server.root;
     cgi = "";
+    scriptInterpreter = "";
     cgi_timeout = 1000;
     redirect = "";
     upload = "";
@@ -235,7 +237,7 @@ void throwSyntaxError(string &str, const string &fname, size_t &lnNbr)
 {
     ostringstream oss;
     oss << "Webserv: syntax error in " << fname << " at line " << lnNbr << " → " << str;
-    throw (runtime_error(oss.str()));
+    throw(runtime_error(oss.str()));
 }
 
 /**
@@ -311,6 +313,9 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
 
     else if (tokens.size() == 2 && tokens[0] == "cgi_pass")
         locTmp.cgi = tokens[1];
+
+    else if (tokens.size() == 2 && tokens[0] == "script_interpreter")
+        locTmp.scriptInterpreter = tokens[1];
 
     else if (tokens.size() == 2 && tokens[0] == "cgi_timeout")
         locTmp.cgi_timeout = myAtol(tokens[1], str, fname, lnNbr);
