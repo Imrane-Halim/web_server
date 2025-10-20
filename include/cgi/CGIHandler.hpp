@@ -14,7 +14,7 @@
 #include "Pipe.hpp"
 #include "HTTPParser.hpp"
 #include "Epoll.hpp"
-#include "RequestHandler.hpp"
+#include "Response.hpp"
 #include "FdManager.hpp"
 #include "Routing.hpp"
 #include <ctype.h>
@@ -31,6 +31,7 @@ class CGIHandler : public EventHandler
         Pipe _inputPipe;
         Pipe _outputPipe;
         pid_t _pid;
+        int status;
         HTTPParser &_Reqparser;
 		HTTPParser _cgiParser;
 		HTTPResponse &_response;
@@ -39,7 +40,7 @@ class CGIHandler : public EventHandler
 
         void push_interpreter_if_needed();
         void initEnv(HTTPParser &parser);
-        void initArgv();
+        void initArgv(RouteMatch const& match);
     public:
         CGIHandler(HTTPParser &parser, ServerConfig &config, FdManager &fdm);
         ~CGIHandler() {}
@@ -89,7 +90,7 @@ void CGIHandler::onReadable()
         _cgiParser.addChunk(buffer, bytesRead);
 		if (_cgiParser.isError())
 			//handle error
-		_response.feed(buffer, bytesRead);
+		_response.feedRAW(buffer, bytesRead);
         //todo write to the toWrite buffer
     }
 
@@ -105,162 +106,162 @@ void CGIHandler::onWritable()
 
 void CGIHandler::onError()
 {
+    waitpid(_pid, &status, WNOHANG);
+    if (WIFEXITED(status))
+    {
+        int exitStatus = WEXITSTATUS(status);
+        // Log or handle the exit status as needed
+    }
+    _isRunning = false;
     // design better error handling
 }
 
-std::map <std::string, std::string> initInterpreterMap()
-{
-    std::map <std::string, std::string> interpreterMap;
-    // --- Python ---
-    interpreterMap[".py"]   = "/usr/bin/python3";
-    interpreterMap[".py2"]  = "/usr/bin/python2";
-    interpreterMap[".py3"]  = "/usr/bin/python3";
+// std::map <std::string, std::string> initInterpreterMap()
+// {
+//     std::map <std::string, std::string> interpreterMap;
+//     // --- Python ---
+//     interpreterMap[".py"]   = "/usr/bin/python3";
+//     interpreterMap[".py2"]  = "/usr/bin/python2";
+//     interpreterMap[".py3"]  = "/usr/bin/python3";
 
-    // --- Perl ---
-    interpreterMap[".pl"]   = "/usr/bin/perl";
-    interpreterMap[".cgi"]  = "/usr/bin/perl";   // legacy CGI often Perl
+//     // --- Perl ---
+//     interpreterMap[".pl"]   = "/usr/bin/perl";
+//     interpreterMap[".cgi"]  = "/usr/bin/perl";   // legacy CGI often Perl
 
-    // --- Ruby ---
-    interpreterMap[".rb"]   = "/usr/bin/ruby";
+//     // --- Ruby ---
+//     interpreterMap[".rb"]   = "/usr/bin/ruby";
 
-    // --- PHP ---
-    interpreterMap[".php"]  = "/usr/bin/php";
+//     // --- PHP ---
+//     interpreterMap[".php"]  = "/usr/bin/php";
 
-    // --- Shell / POSIX ---
-    interpreterMap[".sh"]   = "/bin/sh";
-    interpreterMap[".bash"] = "/bin/bash";
-    interpreterMap[".ksh"]  = "/bin/ksh";
-    interpreterMap[".csh"]  = "/bin/csh";
-    interpreterMap[".tcsh"] = "/bin/tcsh";
-    interpreterMap[".zsh"]  = "/bin/zsh";
+//     // --- Shell / POSIX ---
+//     interpreterMap[".sh"]   = "/bin/sh";
+//     interpreterMap[".bash"] = "/bin/bash";
+//     interpreterMap[".ksh"]  = "/bin/ksh";
+//     interpreterMap[".csh"]  = "/bin/csh";
+//     interpreterMap[".tcsh"] = "/bin/tcsh";
+//     interpreterMap[".zsh"]  = "/bin/zsh";
 
-    // --- Tcl ---
-    interpreterMap[".tcl"]  = "/usr/bin/tclsh";
+//     // --- Tcl ---
+//     interpreterMap[".tcl"]  = "/usr/bin/tclsh";
 
-    // --- Lua ---
-    interpreterMap[".lua"]  = "/usr/bin/lua";
+//     // --- Lua ---
+//     interpreterMap[".lua"]  = "/usr/bin/lua";
 
-    // --- JavaScript / Node.js ---
-    interpreterMap[".js"]   = "/usr/bin/node";
-    interpreterMap[".mjs"]  = "/usr/bin/node";
-    interpreterMap[".cjs"]  = "/usr/bin/node";
+//     // --- JavaScript / Node.js ---
+//     interpreterMap[".js"]   = "/usr/bin/node";
+//     interpreterMap[".mjs"]  = "/usr/bin/node";
+//     interpreterMap[".cjs"]  = "/usr/bin/node";
 
-    // --- awk / sed ---
-    interpreterMap[".awk"]  = "/usr/bin/awk";
-    interpreterMap[".sed"]  = "/bin/sed";
+//     // --- awk / sed ---
+//     interpreterMap[".awk"]  = "/usr/bin/awk";
+//     interpreterMap[".sed"]  = "/bin/sed";
 
-    // --- R language ---
-    interpreterMap[".r"]    = "/usr/bin/Rscript";
+//     // --- R language ---
+//     interpreterMap[".r"]    = "/usr/bin/Rscript";
 
-    // --- Java ---
-    interpreterMap[".java"] = "/usr/bin/java";       // needs compiled class
-    interpreterMap[".jar"]  = "/usr/bin/java -jar";  // run JAR directly
+//     // --- Java ---
+//     interpreterMap[".java"] = "/usr/bin/java";       // needs compiled class
+//     interpreterMap[".jar"]  = "/usr/bin/java -jar";  // run JAR directly
 
-    // --- Scala / Kotlin (JVM-based) ---
-    interpreterMap[".scala"]  = "/usr/bin/scala";
-    interpreterMap[".kt"]     = "/usr/bin/kotlinc";   // compile first
-    interpreterMap[".kts"]    = "/usr/bin/kotlin";    // Kotlin script
+//     // --- Scala / Kotlin (JVM-based) ---
+//     interpreterMap[".scala"]  = "/usr/bin/scala";
+//     interpreterMap[".kt"]     = "/usr/bin/kotlinc";   // compile first
+//     interpreterMap[".kts"]    = "/usr/bin/kotlin";    // Kotlin script
 
-    // --- Groovy ---
-    interpreterMap[".groovy"] = "/usr/bin/groovy";
+//     // --- Groovy ---
+//     interpreterMap[".groovy"] = "/usr/bin/groovy";
 
-    // --- Haskell ---
-    interpreterMap[".hs"]   = "/usr/bin/runhaskell";
+//     // --- Haskell ---
+//     interpreterMap[".hs"]   = "/usr/bin/runhaskell";
 
-    // --- Scheme / Lisp ---
-    interpreterMap[".scm"]  = "/usr/bin/guile";
-    interpreterMap[".ss"]   = "/usr/bin/guile";
-    interpreterMap[".lisp"] = "/usr/bin/clisp";
+//     // --- Scheme / Lisp ---
+//     interpreterMap[".scm"]  = "/usr/bin/guile";
+//     interpreterMap[".ss"]   = "/usr/bin/guile";
+//     interpreterMap[".lisp"] = "/usr/bin/clisp";
 
-    // --- OCaml ---
-    interpreterMap[".ml"]   = "/usr/bin/ocaml";
+//     // --- OCaml ---
+//     interpreterMap[".ml"]   = "/usr/bin/ocaml";
 
-    // --- Erlang / Elixir ---
-    interpreterMap[".erl"]  = "/usr/bin/escript";
-    interpreterMap[".exs"]  = "/usr/bin/elixir";
+//     // --- Erlang / Elixir ---
+//     interpreterMap[".erl"]  = "/usr/bin/escript";
+//     interpreterMap[".exs"]  = "/usr/bin/elixir";
 
-    // --- Julia ---
-    interpreterMap[".jl"]   = "/usr/bin/julia";
+//     // --- Julia ---
+//     interpreterMap[".jl"]   = "/usr/bin/julia";
 
-    // --- Go (script mode with yaegi / go run) ---
-    interpreterMap[".go"]   = "/usr/bin/go run";
+//     // --- Go (script mode with yaegi / go run) ---
+//     interpreterMap[".go"]   = "/usr/bin/go run";
 
-    // --- Swift ---
-    interpreterMap[".swift"] = "/usr/bin/swift";
+//     // --- Swift ---
+//     interpreterMap[".swift"] = "/usr/bin/swift";
 
-    // --- Dart ---
-    interpreterMap[".dart"]  = "/usr/bin/dart";
+//     // --- Dart ---
+//     interpreterMap[".dart"]  = "/usr/bin/dart";
 
-    // --- PowerShell (cross-platform) ---
-    interpreterMap[".ps1"]   = "/usr/bin/pwsh";      // PowerShell Core
-    // Windows may use: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+//     // --- PowerShell (cross-platform) ---
+//     interpreterMap[".ps1"]   = "/usr/bin/pwsh";      // PowerShell Core
+//     // Windows may use: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
 
-    // --- Miscellaneous ---
-    interpreterMap[".raku"]  = "/usr/bin/raku";   // formerly Perl 6
-    interpreterMap[".cr"]    = "/usr/bin/crystal";
-    interpreterMap[".nim"]   = "/usr/bin/nim";    // usually compiles to binary
+//     // --- Miscellaneous ---
+//     interpreterMap[".raku"]  = "/usr/bin/raku";   // formerly Perl 6
+//     interpreterMap[".cr"]    = "/usr/bin/crystal";
+//     interpreterMap[".nim"]   = "/usr/bin/nim";    // usually compiles to binary
 
-    return interpreterMap;
-}
+//     return interpreterMap;
+// }
 
-void CGIHandler::push_interpreter_if_needed()
-{
-    std::string interpreter;
-    std::string extension;
-    std::map <std::string, std::string> interpreterMap;
+// void CGIHandler::push_interpreter_if_needed()
+// {
+//     std::string interpreter;
+//     std::string extension;
+//     std::map <std::string, std::string> interpreterMap;
 
-    if (access(_scriptPath.c_str(), X_OK) != 0)
-        return ; // not runnable at all
+//     if (access(_scriptPath.c_str(), X_OK) != 0)
+//         return ; // not runnable at all
 
-    // 2. Read first two bytes
-    std::ifstream file(_scriptPath, std::ios::binary);
-    if (!file) return;
+//     // 2. Read first two bytes
+//     std::ifstream file(_scriptPath, std::ios::binary);
+//     if (!file) return;
 
-    char header[2];
-    file.read(header, 2);
+//     char header[2];
+//     file.read(header, 2);
 
-    // Case A: shebang present -> kernel handles it
-    if (header[0] == '#' && header[1] == '!') {
-        interpreter.clear();  // no interpreter needed from map
-        return  ;
-    }
+//     // Case A: shebang present -> kernel handles it
+//     if (header[0] == '#' && header[1] == '!') {
+//         interpreter.clear();  // no interpreter needed from map
+//         return  ;
+//     }
 
-    // Case B: ELF binary -> no interpreter
-    if ((unsigned char)header[0] == 0x7f && header[1] == 'E') {
-        interpreter.clear();
-        return ;
-    }
+//     // Case B: ELF binary -> no interpreter
+//     if ((unsigned char)header[0] == 0x7f && header[1] == 'E') {
+//         interpreter.clear();
+//         return ;
+//     }
 
-    size_t dotPos = _scriptPath.rfind('.');
-    if (dotPos != std::string::npos)
-    {
-        extension = _scriptPath.substr(dotPos);
-        interpreterMap = initInterpreterMap();
-        if (interpreterMap.find(extension) != interpreterMap.end())
-        {
-            interpreter = interpreterMap[extension];
-            _argv.push_back(const_cast<char *>(interpreter.c_str()));
-        }
-        return;
-    }
-    throw std::runtime_error(_scriptPath + ": Unknown script type or no interpreter found");
-    return;
-}
+//     size_t dotPos = _scriptPath.rfind('.');
+//     if (dotPos != std::string::npos)
+//     {
+//         extension = _scriptPath.substr(dotPos);
+//         interpreterMap = initInterpreterMap();
+//         if (interpreterMap.find(extension) != interpreterMap.end())
+//         {
+//             interpreter = interpreterMap[extension];
+//             _argv.push_back(const_cast<char *>(interpreter.c_str()));
+//         }
+//         return;
+//     }
+//     throw std::runtime_error(_scriptPath + ": Unknown script type or no interpreter found");
+//     return;
+// }
 
-void CGIHandler::initArgv()
+void CGIHandler::initArgv(RouteMatch const& match)
 {
     //implement look up for interpreter if needed
     _argv.clear();
-    try
-    {
-        push_interpreter_if_needed();
-    }
-    catch(const std::exception& e)
-    {
-        throw;
-    }
-
-    _argv.push_back(const_cast<char *>(_scriptPath.c_str()));
+    if (match.pathInfo.empty())
+        _argv.push_back(const_cast<char *>(match..c_str()));
+    _argv.push_back(const_cast<char *>(match.scriptPath.c_str()));
     _argv.push_back(NULL); // Null-terminate for execve
 }
 
@@ -271,8 +272,8 @@ void CGIHandler::initEnv(HTTPParser &parser)
     envStrings.push_back("GATEWAY_INTERFACE=CGI/1.1");
     envStrings.push_back("SERVER_PROTOCOL=" + parser.getVers());
     envStrings.push_back("REQUEST_METHOD=" + parser.getMethod());
-    envStrings.push_back("REQUEST_URI=" + parser.getUri());
-
+    //envStrings.push_back("REQUEST_URI=" + parser.getUri());
+    envStrings.push_back("QUERY_STRING=" + parser.getQuery());
     // Add headers as HTTP_ environment variables
     strmap headers = parser.getHeaders();
     for (strmap::const_iterator it = headers.begin(); it != headers.end(); ++it)
@@ -307,14 +308,7 @@ CGIHandler::CGIHandler(HTTPParser &parser, ServerConfig &config, FdManager &fdm)
 
 CGIHandler::~CGIHandler()
 {
-    if (_isRunning)
-        kill();
-    // Cleanup allocated environment strings
-    for (size_t i = 0; i < _env.size() - 1; ++i)
-        delete[] _env[i];
-    _env.clear();
-    _fd_manager.detachFd(_outputPipe.read_fd());
-    _fd_manager.detachFd(_inputPipe.write_fd());
+    end();
 }
 
 void CGIHandler::start(const RouteMatch& match, bool needBody)
@@ -324,7 +318,7 @@ void CGIHandler::start(const RouteMatch& match, bool needBody)
 	_needBody = needBody;
     try
     {
-        initArgv();
+        initArgv(match);
         initEnv(_Reqparser);
     }
     catch (const std::exception &e)
