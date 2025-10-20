@@ -220,3 +220,6 @@ const std::string HTTPResponse::_getStatus(int code)
     }
 }
 
+void    HTTPResponse::feedRAW(const char* data, size_t size) { _response.write(data, size); }
+void    HTTPResponse::feedRAW(const std::string& data) { _response.write(data.data(), data.size()); }
+

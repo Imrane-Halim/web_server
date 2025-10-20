@@ -40,6 +40,8 @@ public:
 
     // set body directly (for small responses)
     void setBody(const std::string& data, const std::string& type = "text/html");
+    void feedRAW(const char* data, size_t size);
+    void feedRAW(const std::string& data);
 
     // serve file as body (sets Content-Length automatically)
     // this behavoir might change if we plan to support 'chunekd transfer'
