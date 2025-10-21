@@ -58,7 +58,7 @@ class CGIHandler : public EventHandler
         CGIHandler(HTTPParser &parser, HTTPResponse &response, ServerConfig &config, FdManager &fdm);
         ~CGIHandler();
         int get_fd();
-        void start(const RouteMatch& match, bool needBody);
+        void start(const RouteMatch& match);
         void onEvent(uint32_t events);
         void onReadable();
         void onWritable();
@@ -464,12 +464,12 @@ CGIHandler::~CGIHandler()
     end();
 }
 
-void CGIHandler::start(const RouteMatch& match, bool needBody)
+void CGIHandler::start(const RouteMatch& match)
 {
     if (_isRunning)
         return;
     
-    _needBody = needBody;
+    _needBody = (_Reqparser.getMethod() == "GET")? false : true;
     _scriptPath = match.scriptPath;
     
     try

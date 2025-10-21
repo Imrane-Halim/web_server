@@ -4,7 +4,8 @@ RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPRespon
     _router(config),
     _request(req),
     _response(resp),
-    _cgi(_request,config,fdManager)
+    _cgi(_request,config,fdManager),
+    responseStarted(false)
 {}
 RequestHandler::~RequestHandler() { reset(); }
 
@@ -305,6 +306,5 @@ void    RequestHandler::_handleCGI(const RouteMatch& match)
 {
     // idk pas the response to fill it or smth
     // run the script, see RouteMatch for more info.. etc
-	cgiStartTime = time(NULL);
-    _cgi.start();
+    _cgi.start(match);
 }

@@ -26,10 +26,11 @@ class Client: public EventHandler
     Socket _socket;
     Logger logger;
 
-    HTTPParser    _req;
-    HTTPResponse  _resp;
+    HTTPParser      _req;
+    HTTPResponse    _resp;
 
-    RequestHandler _handler;
+    RequestHandler  _handler;
+
 
     char         _readBuff[BUFF_SIZE];
     char         _sendBuff[BUFF_SIZE];
