@@ -18,7 +18,7 @@
 #include "FdManager.hpp"
 #include "Routing.hpp"
 #include <ctype.h>
-
+#include "../utils/Logger.hpp"
 #define BUFFER_SIZE 4096
 
 
@@ -32,6 +32,7 @@ class CGIHandler : public EventHandler
         Pipe _outputPipe;
         pid_t _pid;
         int status;
+        bool responseStarted;
         HTTPParser &_Reqparser;
 		HTTPParser _cgiParser;
 		HTTPResponse &_response;
@@ -106,14 +107,17 @@ void CGIHandler::onWritable()
 
 void CGIHandler::onError()
 {
+    // todo : design better error handling mechanism /* error pages or closing if response is already partly sent */
     waitpid(_pid, &status, WNOHANG);
+    if (status == 0)
+        return; // still running
     if (WIFEXITED(status))
-    {
-        int exitStatus = WEXITSTATUS(status);
-        // Log or handle the exit status as needed
-    }
+        status = WEXITSTATUS(status);
+    // Log or handle the exit status as needed
+    Logger logger;
+    logger.error("CGI process exited with status: " + std::to_string(status));
     _isRunning = false;
-    // design better error handling
+    end();
 }
 
 // std::map <std::string, std::string> initInterpreterMap()
@@ -259,8 +263,8 @@ void CGIHandler::initArgv(RouteMatch const& match)
 {
     //implement look up for interpreter if needed
     _argv.clear();
-    if (match.pathInfo.empty())
-        _argv.push_back(const_cast<char *>(match..c_str()));
+    if (!match.scriptInterpreter.empty())
+        _argv.push_back(const_cast<char *>(match.scriptInterpreter.c_str()));
     _argv.push_back(const_cast<char *>(match.scriptPath.c_str()));
     _argv.push_back(NULL); // Null-terminate for execve
 }
@@ -387,3 +391,4 @@ void CGIHandler::end()
 
 
 #endif //CGI_HANDLER_HPP
+ 
