@@ -64,6 +64,7 @@ public:
     void onReadable();
     void onWritable();
     void onError();
+    int get_fd();
 };
 
 #endif //CLIENT_HPP

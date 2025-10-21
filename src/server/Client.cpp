@@ -186,3 +186,8 @@ bool    Client::_shouldKeepAlive()
 {
     return _handler.keepAlive();
 }
+
+int Client::get_fd()
+{
+    return (_socket.get_fd());
+}

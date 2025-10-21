@@ -17,6 +17,7 @@ class Server : public EventHandler
         void onReadable();
         void onWritable();
         void onError();
+        int get_fd();
 };
 
 #endif //SERVER_HPP

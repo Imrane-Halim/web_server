@@ -87,3 +87,8 @@ void Server::onError()
     
     _fd_manager.remove(get_fd());
 }
+
+int Server::get_fd()
+{
+    return (_socket.get_fd());
+}

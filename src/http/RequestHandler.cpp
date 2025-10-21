@@ -4,7 +4,7 @@ RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPRespon
     _router(config),
     _request(req),
     _response(resp),
-    _cgi(_request,config,fdManager),
+    _cgi(_request,_response,config,fdManager),
     responseStarted(false)
 {}
 RequestHandler::~RequestHandler() { reset(); }

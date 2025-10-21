@@ -58,6 +58,7 @@ class CGIHandler : public EventHandler
         CGIHandler(HTTPParser &parser, HTTPResponse &response, ServerConfig &config, FdManager &fdm);
         ~CGIHandler();
         int get_fd();
+        int getStatus();
         void start(const RouteMatch& match);
         void onEvent(uint32_t events);
         void onReadable();
@@ -527,7 +528,7 @@ void CGIHandler::start(const RouteMatch& match)
         _outputPipe.set_non_blocking();
         
         // Register pipes with epoll
-        if (needBody && _Reqparser.getBody().getSize() > 0)
+        if (_needBody && _Reqparser.getBody().getSize() > 0)
         {
             _fd_manager.add(_inputPipe.write_fd(), this, EPOLLOUT);
         }
@@ -576,6 +577,10 @@ void CGIHandler::end()
     _env.clear();
 }
 
+int CGIHandler::getStatus()
+{
+    return (status);
+}
 
 #endif //CGI_HANDLER_HPP
  
