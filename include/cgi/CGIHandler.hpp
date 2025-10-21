@@ -172,7 +172,7 @@ void CGIHandler::onWritable()
         return;
     }
     
-    size_t available = _Reqparser.getBody().getCapacity() - _Reqparser.getBody().getSize();
+    size_t available = _Reqparser.getBody().getSize();
     if (available == 0)
     {
         // All body data has been sent
