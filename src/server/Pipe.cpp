@@ -2,6 +2,8 @@
 
 Pipe::Pipe()
 {
+    fd[0] = -1;
+    fd[1] = -1;
     if (pipe(fd) == -1) 
     {
         throw std::runtime_error("Failed to create pipe");
@@ -53,13 +55,19 @@ int Pipe::write(const char *data, size_t size)
 void Pipe::closeRead()
 {
     if (fd[0] != -1)
+    {
         ::close(fd[0]);
+        fd[0] = -1;
+    }
 }
 
 void Pipe::closeWrite()
 {
     if (fd[1] != -1)
+    {
         ::close(fd[1]);
+        fd[1] = -1;
+    }
 }
 
 
