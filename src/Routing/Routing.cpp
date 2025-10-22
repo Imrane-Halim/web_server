@@ -57,7 +57,9 @@ RouteMatch Routing::match(const string &path, const string &method)
 
     if (result.isCGI)
     {
-        _splitCGIPath(result.fsPath, result.scriptPath, result.pathInfo);
+        // For CGI, use the cgi field directly as the script path
+        result.scriptPath = loc->cgi;
+        result.pathInfo = "";
         result.scriptInterpreter = loc->scriptInterpreter;
     }
 

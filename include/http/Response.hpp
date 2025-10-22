@@ -26,13 +26,15 @@ class HTTPResponse
     int     _file_fd;       // file descriptor (if serving file)
     size_t  _file_size;     // total file size
     size_t  _bytes_sent;    // bytes sent from file
-
+    
+    
     const std::string _getContentType(const std::string &filepath);
     const std::string _getStatus(int code);
-public:
+    public:
+    bool   _cgiComplete;
     HTTPResponse(const std::string& version);
     ~HTTPResponse();
-
+    
     void    startLine(int code);
 
     void addHeader(const std::string &name, const std::string &value);

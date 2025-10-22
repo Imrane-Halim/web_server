@@ -14,6 +14,7 @@ CXXFLAGS += -I$(INC_DIR)/utils \
 			-I$(INC_DIR)/Routing \
 			-I$(INC_DIR)/http \
 			-I$(INC_DIR)/server \
+			-I$(INC_DIR)/cgi \
 			-g3
 # project files.
 # todo: remove the wildcard functions
@@ -24,9 +25,10 @@ ERRORS = $(wildcard src/error_pages/*.cpp)
 HTTP = $(wildcard src/http/*.cpp)
 SERVER = $(wildcard src/server/*.cpp)
 UTILS = $(wildcard src/utils/*.cpp)
+CGI = $(wildcard src/cgi/*.cpp)
 
 
-SRC = $(MAIN) $(UTILS) $(ERRORS) $(PARSING) $(ROUTING) $(HTTP) $(SERVER)
+SRC = $(MAIN) $(UTILS) $(ERRORS) $(PARSING) $(ROUTING) $(HTTP) $(SERVER) $(CGI)
 OBJ = $(SRC:%.cpp=$(OBJ_DIR)/%.o)
 
 

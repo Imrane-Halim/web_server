@@ -121,9 +121,15 @@ bool Client::_sendData()
     }
     if (toSend == 0)
     {
-        logger.debug("Client send response complete fd: " + _strFD);
-        _state = ST_SENDCOMPLETE;
-        return false;
+        // Only consider response complete if handler confirms it
+        if (_handler.isResComplete())
+        {
+            logger.debug("Client send response complete fd: " + _strFD);
+            _state = ST_SENDCOMPLETE;
+            return false;
+        }
+        // No data available yet, but response not complete (e.g., waiting for CGI)
+        return true;
     }
     
     ssize_t sent = _socket.send(_sendBuff, toSend, 0);

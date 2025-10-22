@@ -5,6 +5,9 @@ RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPRespon
     _request(req),
     _response(resp),
     _cgi(_request,_response,config,fdManager),
+    _cgiSrtartTime(0),
+    _keepAlive(false),
+    _isCGI(false),
     responseStarted(false)
 {}
 RequestHandler::~RequestHandler() { reset(); }
@@ -12,7 +15,13 @@ RequestHandler::~RequestHandler() { reset(); }
 void    RequestHandler::feed(char* buff, size_t size) { _request.addChunk(buff, size); }
 
 bool    RequestHandler::isReqComplete() { return _request.isComplete(); }
-bool    RequestHandler::isResComplete() { return _response.isComplete(); }
+bool    RequestHandler::isResComplete() 
+{ 
+    // If CGI is running, response is not complete yet
+    if (_isCGI && _cgi.isRunning())
+        return false;
+    return _response.isComplete(); 
+}
 bool    RequestHandler::isError() { return _request.isError(); }
 
 size_t  RequestHandler::readNextChunk(char *buff, size_t size)
@@ -20,7 +29,7 @@ size_t  RequestHandler::readNextChunk(char *buff, size_t size)
     if (!responseStarted)
         responseStarted = true;
     const RouteMatch& match = _router.match(_request.getUri(), _request.getMethod());
-	if (_isCGI && match.location->cgi_timeout <= difftime(_cgiSrtartTime,time(NULL)))
+	if (_isCGI && difftime(time(NULL), _cgiSrtartTime) >= match.location->cgi_timeout)
 	{
         _cgi.end();
         logger.error("CGI timeout reached for script: " + match.scriptPath);
@@ -29,8 +38,6 @@ size_t  RequestHandler::readNextChunk(char *buff, size_t size)
         else 
 		    return (-1);
 	}
-    if (_isCGI)
-	    _cgiSrtartTime = time(NULL);
     if (_isCGI && _cgi.getStatus() != 0)
     {
         if (responseStarted == false)
@@ -71,8 +78,8 @@ void    RequestHandler::processRequest()
     }
 
     _isCGI = match.isCGI;
-
     const std::string& method = _request.getMethod();
+    logger.debug("rquest method : " + method);
     if (method == "GET")
         _handleGET(match);
     else if (method == "POST")
@@ -320,5 +327,7 @@ void    RequestHandler::_handleCGI(const RouteMatch& match)
 {
     // idk pas the response to fill it or smth
     // run the script, see RouteMatch for more info.. etc
+    logger.debug("cgi start is called");
+    _cgiSrtartTime = time(NULL);
     _cgi.start(match);
 }
