@@ -21,9 +21,17 @@ size_t  RequestHandler::readNextChunk(char *buff, size_t size)
 	if (_isCGI && match.location->cgi_timeout > difftime(_cgiSrtartTime,time(NULL)))
 	{
 		_cgi.end();
+        if (responseStarted == false)
+        {
+            logger.error("CGI timeout reached for script: " + match.scriptPath);
+            _sendErrorResponse(504);
+        }
 		return (-1);
 	}
-	_cgiSrtartTime = time(NULL);
+    if (_isCGI)
+	    _cgiSrtartTime = time(NULL);
+    if (_isCGI && _cgi.getStatus() != 0)
+        _sendErrorResponse(_cgi.getStatus());
 	return _response.readNextChunk(buff, size);
 }
 

@@ -38,6 +38,7 @@ class CGIHandler : public EventHandler
 {
     private:
         std::string _scriptPath;
+        std::string _interpreterPath;  // Store copy for argv
         std::vector<char *> _env;
         std::vector<char *> _argv;
         Pipe _inputPipe;
@@ -66,6 +67,7 @@ class CGIHandler : public EventHandler
         void onError();
         bool isRunning() const;
         void end();
+        void reset();
 };
 
 void CGIHandler::onEvent(uint32_t events)
@@ -105,9 +107,12 @@ void CGIHandler::onReadable()
         {
             Logger logger;
             logger.error("CGI output incomplete or malformed");
-            _response.reset();
-            _response.startLine(502);
-            _response.setBody("<html><body><h1>502 Bad Gateway</h1><p>CGI script did not produce valid output</p></body></html>");
+            // _response.reset();
+            // _response.startLine(502);
+            // _response.setBody("<html><body><h1>502 Bad Gateway</h1><p>CGI script did not produce valid output</p></body></html>");
+            status = 502;
+            onError();
+            return;
         }
         
         _isRunning = false;
@@ -122,9 +127,10 @@ void CGIHandler::onReadable()
         {
             Logger logger;
             logger.error("CGI response parsing error");
-            _response.reset();
-            _response.startLine(502);
-            _response.setBody("<html><body><h1>502 Bad Gateway</h1><p>Invalid CGI response</p></body></html>");
+            // _response.reset();
+            // _response.startLine(502);
+            // _response.setBody("<html><body><h1>502 Bad Gateway</h1><p>Invalid CGI response</p></body></html>");
+            status = 502;
             onError();
             return;
         }
@@ -155,25 +161,38 @@ void CGIHandler::onReadable()
             _response.endHeaders();
         }
         
-        // Feed body data to response
+        // Feed body data to response (only the actual body, not headers)
         if (_cgiParser.getState() == BODY || _cgiParser.getState() == COMPLETE)
         {
-            _response.feedRAW(buffer, bytesRead);
+            RingBuffer body = _cgiParser.getBody();
+            size_t bodySize = body.getSize();
+            if (bodySize > 0)
+            {
+                char bodyBuffer[BUFFER_SIZE];
+                size_t toRead = (bodySize > BUFFER_SIZE) ? BUFFER_SIZE : bodySize;
+                size_t bytesRead = body.read(bodyBuffer, toRead);
+                if (bytesRead > 0)
+                {
+                    _response.feedRAW(bodyBuffer, bytesRead);
+                }
+            }
         }
     }
 }
 
 void CGIHandler::onWritable()
 {
-    if (!_needBody || _Reqparser.getBody().getSize() == 0)
+    if (!_needBody)
     {
-        // No more data to write, close the input pipe write end
+        // No body to send, close the input pipe write end
         _fd_manager.detachFd(_inputPipe.write_fd());
         _inputPipe.closeWrite();
         return;
     }
     
-    size_t available = _Reqparser.getBody().getSize();
+    RingBuffer body = _Reqparser.getBody();
+    size_t available = body.getSize();
+    
     if (available == 0)
     {
         // All body data has been sent
@@ -184,7 +203,7 @@ void CGIHandler::onWritable()
     
     char buffer[BUFFER_SIZE];
     size_t toWrite = (available > BUFFER_SIZE) ? BUFFER_SIZE : available;
-    size_t bytesRead = _Reqparser.getBody().read(buffer, toWrite);
+    size_t bytesRead = body.read(buffer, toWrite);
     
     if (bytesRead > 0)
     {
@@ -200,7 +219,7 @@ void CGIHandler::onWritable()
     }
     
     // Check if we've written all the body data
-    if (_Reqparser.getBody().getSize() == 0)
+    if (body.getSize() == 0)
     {
         _fd_manager.detachFd(_inputPipe.write_fd());
         _inputPipe.closeWrite();
@@ -249,163 +268,24 @@ void CGIHandler::onError()
         }
     }
     
-    // If response hasn't started yet, send an error response
-    if (!responseStarted)
-    {
-        _response.reset();
-        _response.startLine(502);
-        _response.setBody("<html><body><h1>502 Bad Gateway</h1><p>CGI script error</p></body></html>");
-    }
-    
+    status = 502;
     _isRunning = false;
 }
 
-// std::map <std::string, std::string> initInterpreterMap()
-// {
-//     std::map <std::string, std::string> interpreterMap;
-//     // --- Python ---
-//     interpreterMap[".py"]   = "/usr/bin/python3";
-//     interpreterMap[".py2"]  = "/usr/bin/python2";
-//     interpreterMap[".py3"]  = "/usr/bin/python3";
-
-//     // --- Perl ---
-//     interpreterMap[".pl"]   = "/usr/bin/perl";
-//     interpreterMap[".cgi"]  = "/usr/bin/perl";   // legacy CGI often Perl
-
-//     // --- Ruby ---
-//     interpreterMap[".rb"]   = "/usr/bin/ruby";
-
-//     // --- PHP ---
-//     interpreterMap[".php"]  = "/usr/bin/php";
-
-//     // --- Shell / POSIX ---
-//     interpreterMap[".sh"]   = "/bin/sh";
-//     interpreterMap[".bash"] = "/bin/bash";
-//     interpreterMap[".ksh"]  = "/bin/ksh";
-//     interpreterMap[".csh"]  = "/bin/csh";
-//     interpreterMap[".tcsh"] = "/bin/tcsh";
-//     interpreterMap[".zsh"]  = "/bin/zsh";
-
-//     // --- Tcl ---
-//     interpreterMap[".tcl"]  = "/usr/bin/tclsh";
-
-//     // --- Lua ---
-//     interpreterMap[".lua"]  = "/usr/bin/lua";
-
-//     // --- JavaScript / Node.js ---
-//     interpreterMap[".js"]   = "/usr/bin/node";
-//     interpreterMap[".mjs"]  = "/usr/bin/node";
-//     interpreterMap[".cjs"]  = "/usr/bin/node";
-
-//     // --- awk / sed ---
-//     interpreterMap[".awk"]  = "/usr/bin/awk";
-//     interpreterMap[".sed"]  = "/bin/sed";
-
-//     // --- R language ---
-//     interpreterMap[".r"]    = "/usr/bin/Rscript";
-
-//     // --- Java ---
-//     interpreterMap[".java"] = "/usr/bin/java";       // needs compiled class
-//     interpreterMap[".jar"]  = "/usr/bin/java -jar";  // run JAR directly
-
-//     // --- Scala / Kotlin (JVM-based) ---
-//     interpreterMap[".scala"]  = "/usr/bin/scala";
-//     interpreterMap[".kt"]     = "/usr/bin/kotlinc";   // compile first
-//     interpreterMap[".kts"]    = "/usr/bin/kotlin";    // Kotlin script
-
-//     // --- Groovy ---
-//     interpreterMap[".groovy"] = "/usr/bin/groovy";
-
-//     // --- Haskell ---
-//     interpreterMap[".hs"]   = "/usr/bin/runhaskell";
-
-//     // --- Scheme / Lisp ---
-//     interpreterMap[".scm"]  = "/usr/bin/guile";
-//     interpreterMap[".ss"]   = "/usr/bin/guile";
-//     interpreterMap[".lisp"] = "/usr/bin/clisp";
-
-//     // --- OCaml ---
-//     interpreterMap[".ml"]   = "/usr/bin/ocaml";
-
-//     // --- Erlang / Elixir ---
-//     interpreterMap[".erl"]  = "/usr/bin/escript";
-//     interpreterMap[".exs"]  = "/usr/bin/elixir";
-
-//     // --- Julia ---
-//     interpreterMap[".jl"]   = "/usr/bin/julia";
-
-//     // --- Go (script mode with yaegi / go run) ---
-//     interpreterMap[".go"]   = "/usr/bin/go run";
-
-//     // --- Swift ---
-//     interpreterMap[".swift"] = "/usr/bin/swift";
-
-//     // --- Dart ---
-//     interpreterMap[".dart"]  = "/usr/bin/dart";
-
-//     // --- PowerShell (cross-platform) ---
-//     interpreterMap[".ps1"]   = "/usr/bin/pwsh";      // PowerShell Core
-//     // Windows may use: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-
-//     // --- Miscellaneous ---
-//     interpreterMap[".raku"]  = "/usr/bin/raku";   // formerly Perl 6
-//     interpreterMap[".cr"]    = "/usr/bin/crystal";
-//     interpreterMap[".nim"]   = "/usr/bin/nim";    // usually compiles to binary
-
-//     return interpreterMap;
-// }
-
-// void CGIHandler::push_interpreter_if_needed()
-// {
-//     std::string interpreter;
-//     std::string extension;
-//     std::map <std::string, std::string> interpreterMap;
-
-//     if (access(_scriptPath.c_str(), X_OK) != 0)
-//         return ; // not runnable at all
-
-//     // 2. Read first two bytes
-//     std::ifstream file(_scriptPath, std::ios::binary);
-//     if (!file) return;
-
-//     char header[2];
-//     file.read(header, 2);
-
-//     // Case A: shebang present -> kernel handles it
-//     if (header[0] == '#' && header[1] == '!') {
-//         interpreter.clear();  // no interpreter needed from map
-//         return  ;
-//     }
-
-//     // Case B: ELF binary -> no interpreter
-//     if ((unsigned char)header[0] == 0x7f && header[1] == 'E') {
-//         interpreter.clear();
-//         return ;
-//     }
-
-//     size_t dotPos = _scriptPath.rfind('.');
-//     if (dotPos != std::string::npos)
-//     {
-//         extension = _scriptPath.substr(dotPos);
-//         interpreterMap = initInterpreterMap();
-//         if (interpreterMap.find(extension) != interpreterMap.end())
-//         {
-//             interpreter = interpreterMap[extension];
-//             _argv.push_back(const_cast<char *>(interpreter.c_str()));
-//         }
-//         return;
-//     }
-//     throw std::runtime_error(_scriptPath + ": Unknown script type or no interpreter found");
-//     return;
-// }
 
 void CGIHandler::initArgv(RouteMatch const& match)
 {
-    //implement look up for interpreter if needed
     _argv.clear();
+    
+    // Store copies of the strings so we have valid pointers
     if (!match.scriptInterpreter.empty())
-        _argv.push_back(const_cast<char *>(match.scriptInterpreter.c_str()));
-    _argv.push_back(const_cast<char *>(match.scriptPath.c_str()));
+    {
+        _interpreterPath = match.scriptInterpreter;
+        _argv.push_back(const_cast<char *>(_interpreterPath.c_str()));
+    }
+    
+    _scriptPath = match.scriptPath;
+    _argv.push_back(const_cast<char *>(_scriptPath.c_str()));
     _argv.push_back(NULL); // Null-terminate for execve
 }
 
@@ -413,26 +293,46 @@ void CGIHandler::initEnv(HTTPParser &parser)
 {
     std::vector<std::string> envStrings;
 
+    // Standard CGI environment variables
     envStrings.push_back("GATEWAY_INTERFACE=CGI/1.1");
     envStrings.push_back("SERVER_PROTOCOL=" + parser.getVers());
     envStrings.push_back("REQUEST_METHOD=" + parser.getMethod());
-    //envStrings.push_back("REQUEST_URI=" + parser.getUri());
+    envStrings.push_back("SCRIPT_NAME=" + parser.getUri());
+    envStrings.push_back("SCRIPT_FILENAME=" + _scriptPath);
     envStrings.push_back("QUERY_STRING=" + parser.getQuery());
-    // Add headers as HTTP_ environment variables
+    
+    // Server information (use defaults if not available from config)
+    envStrings.push_back("SERVER_NAME=" + (_config.host.empty() ? "localhost" : _config.host));
+    envStrings.push_back("SERVER_PORT=" + intToString(_config.port));
+    envStrings.push_back("SERVER_SOFTWARE=WebServ/1.0");
+    
+    // Remote address (would need to be passed from connection context)
+    //envStrings.push_back("REMOTE_ADDR=127.0.0.1");
+    
+    // Get headers
     strmap headers = parser.getHeaders();
+    
+    // Content-Length and Content-Type (special handling - don't need HTTP_ prefix)
+    if (headers.find("content-length") != headers.end())
+        envStrings.push_back("CONTENT_LENGTH=" + headers["content-length"]);
+    else
+        envStrings.push_back("CONTENT_LENGTH=0");
+        
+    if (headers.find("content-type") != headers.end())
+        envStrings.push_back("CONTENT_TYPE=" + headers["content-type"]);
+    
+    // Adding other headers as HTTP_ environment variables
     for (strmap::const_iterator it = headers.begin(); it != headers.end(); ++it)
     {
+        // Skipping Content-Length and Content-Type as they're already handled
+        if (it->first == "content-length" || it->first == "content-type")
+            continue;
+            
         std::string key = it->first;
         std::transform(key.begin(), key.end(), key.begin(), ::toupper);
         std::replace(key.begin(), key.end(), '-', '_');
         envStrings.push_back("HTTP_" + key + "=" + it->second);
     }
-
-    // Content-Length and Content-Type
-    if (headers.find("content-length") != headers.end())
-        envStrings.push_back("CONTENT_LENGTH=" + headers["content-length"]);
-    if (headers.find("content-type") != headers.end())
-        envStrings.push_back("CONTENT_TYPE=" + headers["content-type"]);
 
     // Allocate and store char* pointers
     _env.clear();
@@ -463,14 +363,25 @@ CGIHandler::CGIHandler(HTTPParser &parser, HTTPResponse &response, ServerConfig 
 CGIHandler::~CGIHandler()
 {
     end();
+    
+    // Clean up any remaining environment variables
+    for (size_t i = 0; i < _env.size(); ++i)
+    {
+        if (_env[i] != NULL)
+            delete[] _env[i];
+    }
+    _env.clear();
 }
 
 void CGIHandler::start(const RouteMatch& match)
 {
     if (_isRunning)
         return;
+
+    //reset CGI handler state
+    reset();
     
-    _needBody = (_Reqparser.getMethod() == "GET")? false : true;
+    _needBody = (_Reqparser.getMethod() == "POST" || _Reqparser.getMethod() == "PUT");
     _scriptPath = match.scriptPath;
     
     try
@@ -528,7 +439,8 @@ void CGIHandler::start(const RouteMatch& match)
         _outputPipe.set_non_blocking();
         
         // Register pipes with epoll
-        if (_needBody && _Reqparser.getBody().getSize() > 0)
+        RingBuffer body = _Reqparser.getBody();
+        if (_needBody && body.getSize() > 0)
         {
             _fd_manager.add(_inputPipe.write_fd(), this, EPOLLOUT);
         }
@@ -541,6 +453,12 @@ void CGIHandler::start(const RouteMatch& match)
         _fd_manager.add(_outputPipe.read_fd(), this, EPOLLIN);
         
         _isRunning = true;
+        for (size_t i = 0; i < _env.size(); ++i)
+        {
+            delete[] _env[i];
+        }
+        _env.clear();
+
     }
 }
 
@@ -567,14 +485,67 @@ void CGIHandler::end()
     if (!_isRunning)
         return;
 
+    // Kill the child process
     ::kill(_pid, SIGKILL);
-    int status;
-    waitpid(_pid, &status, 0);
+    
+    // Wait for the process to actually terminate (without WNOHANG)
+    int waitStatus;
+    waitpid(_pid, &waitStatus, 0);
+    
     _isRunning = false;
+}
 
-    for (size_t i = 0; i < _env.size() - 1; ++i)
-        delete[] _env[i];
+void CGIHandler::reset()
+{
+    // End any running CGI process
+    end();
+    
+    // Clean up pipes if they're still open
+
+    if (_inputPipe.write_fd() != -1)
+    {
+        _fd_manager.detachFd(_inputPipe.write_fd());
+        _inputPipe.closeWrite();
+    }
+    if (_inputPipe.read_fd() != -1)
+    {
+        _inputPipe.closeRead();
+    }
+    if (_outputPipe.read_fd() != -1)
+    {
+        _fd_manager.detachFd(_outputPipe.read_fd());
+        _outputPipe.closeRead();
+    }
+    if (_outputPipe.write_fd() != -1)
+    {
+        _outputPipe.closeWrite();
+    }
+    
+    // Clean up any remaining environment variables
+    for (size_t i = 0; i < _env.size(); ++i)
+    {
+        if (_env[i] != NULL)
+            delete[] _env[i];
+    }
     _env.clear();
+    
+    // Clean up argv
+    _argv.clear();
+    
+    // Reset state variables
+    _scriptPath.clear();
+    _interpreterPath.clear();
+    _pid = -1;
+    status = 0;
+    responseStarted = false;
+    _isRunning = false;
+    _needBody = false;
+    
+    // Reset the CGI parser for the next request
+    _cgiParser.reset();
+    
+    // Note: _Reqparser and _response are references and should be
+    // updated externally before calling start() again
 }
 
 int CGIHandler::getStatus()

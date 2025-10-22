@@ -11,7 +11,7 @@ Client::Client(int socket_fd, ServerConfig &config, FdManager &fdm) :
     EventHandler(config, fdm),
     _socket(socket_fd),
     _resp("HTTP/1.1"),
-    _handler(config, _req, _resp),
+    _handler(config, _req, _resp, fdm),
     _strFD(intToString(socket_fd)),
     _state(ST_READING)
 {
