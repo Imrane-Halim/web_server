@@ -223,6 +223,26 @@ const std::string HTTPResponse::_getStatus(int code)
     }
 }
 
-void    HTTPResponse::feedRAW(const char* data, size_t size) { _response.write(data, size); }
-void    HTTPResponse::feedRAW(const std::string& data) { _response.write(data.data(), data.size()); }
+void    HTTPResponse::feedRAW(const char* data, size_t size)
+{
+    std::stringstream ss;
+    ss << std::hex << size;
+    std::string sizeStr = ss.str();
+
+    _response.write(sizeStr.data(), sizeStr.size());
+    _response.write(CRLF, 2); 
+    _response.write(data, size);
+    _response.write(CRLF, 2); 
+}
+void    HTTPResponse::feedRAW(const std::string& data)
+{
+    std::stringstream ss;
+    ss << std::hex << data.size();
+    std::string sizeStr = ss.str();
+
+    _response.write(sizeStr.data(), sizeStr.size());
+    _response.write(CRLF, 2);
+    _response.write(data.data(), data.size());
+    _response.write(CRLF, 2);
+}
 

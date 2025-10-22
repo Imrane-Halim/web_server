@@ -41,7 +41,11 @@ class HTTPResponse
     void endHeaders();
 
     // set body directly (for small responses)
+    // it automaticy sets content-length/type headers
     void setBody(const std::string& data, const std::string& type = "text/html");
+
+
+    // used for chunked transfer (chunked transfer needs to be added in the headers)
     void feedRAW(const char* data, size_t size);
     void feedRAW(const std::string& data);
 
