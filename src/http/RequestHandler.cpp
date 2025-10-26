@@ -10,7 +10,12 @@ RequestHandler::RequestHandler(ServerConfig &config, HTTPParser& req, HTTPRespon
     _isCGI(false),
     responseStarted(false)
 {}
-RequestHandler::~RequestHandler() { reset(); }
+RequestHandler::~RequestHandler() 
+{ 
+    Logger logger;
+    logger.debug("RequestHandler destructor called");
+    reset(); 
+}
 
 void    RequestHandler::feed(char* buff, size_t size) { _request.addChunk(buff, size); }
 
@@ -53,6 +58,7 @@ void    RequestHandler::reset()
     _isCGI = false;
     _request.reset();
     _response.reset();
+    _cgi.reset();
 }
 
 bool    RequestHandler::keepAlive()

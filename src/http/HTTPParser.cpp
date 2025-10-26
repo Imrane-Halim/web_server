@@ -44,7 +44,10 @@ void    HTTPParser::reset(void)
     _body.clear();
     _headers.clear();
     
-    _state = START_LINE;
+    if (_isCGIResponse)
+        _state = HEADERS;
+    else
+        _state = START_LINE;
     _buffer.clear();
     _buffOffset = 0;
 
@@ -58,7 +61,7 @@ void    HTTPParser::reset(void)
     _bodyHandler = NULL;
     _data = NULL;
 
-    _isCGIResponse = false;
+    //_isCGIResponse = false;
 }
 
 void    HTTPParser::addChunk(char* buff, size_t size)

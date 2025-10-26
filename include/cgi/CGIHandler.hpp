@@ -48,7 +48,7 @@ private:
 
 	bool _ShouldAddSLine;
 
-	void push_interpreter_if_needed();
+	//void init_(HTTPParser &parser, RouteMatch const &match);
 	void initEnv(HTTPParser &parser);
 	void initArgv(RouteMatch const &match);
 

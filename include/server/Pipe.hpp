@@ -22,6 +22,7 @@ class Pipe
         void set_non_blocking();
         void closeRead();
         void closeWrite();
+        void open();
         void close();
 };
 

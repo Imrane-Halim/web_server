@@ -38,7 +38,7 @@ void EventLoop::run()
                         EventHandler* handler = fd_manager.getOwner(events[i].data.fd);
                         if (handler) {
                             fd_manager.remove(events[i].data.fd);
-                            delete handler;
+                            //delete handler;
                     }
                 } 
                 catch (...) 

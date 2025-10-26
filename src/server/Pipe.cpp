@@ -7,13 +7,19 @@ Pipe::Pipe()
     fd[1] = -1;
     Logger logger;
     logger.debug("pipe constructor is called");
+}
+
+void Pipe::open()
+{
+    Logger logger;
+    logger.info("Creating pipe");
     if (pipe(fd) == -1) 
     {
         logger.debug("pipe() syscall failed");
         throw std::runtime_error("Failed to create pipe");
     }
     logger.debug("pipe created with read fd: " + intToString(fd[0]) + ", write fd: " + intToString(fd[1]));
-}
+}   
 
 Pipe::~Pipe()
 {

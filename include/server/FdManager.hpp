@@ -4,6 +4,7 @@
 #include <map>
 #include "EventHandler.hpp"
 #include "Epoll.hpp"
+#include "../utils/Logger.hpp"
 
 class FdManager {
     private:
@@ -13,6 +14,8 @@ public:
     FdManager(Epoll &epoll) : _epoll(epoll) {}
     ~FdManager() 
     {
+        Logger logger;
+        logger.debug("FdManager destructor called");
         for (std::map<int, EventHandler*>::iterator it = fd_map.begin(); it != fd_map.end(); ++it) {
             delete it->second;
         }
@@ -29,7 +32,7 @@ public:
         if (it != fd_map.end()) 
         {
             _epoll.remove_fd(fd);
-            delete it->second;
+            //delete it->second;
             fd_map.erase(it);
         }
     }

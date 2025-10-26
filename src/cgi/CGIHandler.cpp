@@ -188,11 +188,13 @@ void CGIHandler::onError()
 	char buffer[BUFFER_SIZE];
 	ssize_t bytesRead = _outputPipe.read(buffer, BUFFER_SIZE);
 	if (bytesRead > 0)
+	{
 		_cgiParser.addChunk(buffer,bytesRead);
 		if (_cgiParser.getState() == ERROR)
 		{
 			//handle error;
 		}
+	}
 		_response.feedRAW(buffer,bytesRead);
 	{
 		_response.feedRAW("", 0);
@@ -334,7 +336,8 @@ CGIHandler::CGIHandler(HTTPParser &parser, HTTPResponse &response, ServerConfig 
 CGIHandler::~CGIHandler()
 {
 	end();
-
+	Logger logger;
+	logger.debug("CGIHandler destructor called");
 	// Clean up any remaining environment variables
 	for (size_t i = 0; i < _env.size(); ++i)
 	{
@@ -359,6 +362,8 @@ void CGIHandler::start(const RouteMatch &match)
 	{
 		initArgv(match);
 		initEnv(_Reqparser);
+		_inputPipe.open();
+		_outputPipe.open();
 	}
 	catch (const std::exception &e)
 	{
@@ -478,26 +483,9 @@ void CGIHandler::reset()
 	// End any running CGI process
 	end();
 
-	// Clean up pipes if they're still open
-
-	if (_inputPipe.write_fd() != -1)
-	{
-		_fd_manager.detachFd(_inputPipe.write_fd());
-		_inputPipe.closeWrite();
-	}
-	if (_inputPipe.read_fd() != -1)
-	{
-		_inputPipe.closeRead();
-	}
-	if (_outputPipe.read_fd() != -1)
-	{
-		_fd_manager.detachFd(_outputPipe.read_fd());
-		_outputPipe.closeRead();
-	}
-	if (_outputPipe.write_fd() != -1)
-	{
-		_outputPipe.closeWrite();
-	}
+	// close pipes (close already checks if pipe is closed)
+	_inputPipe.close();
+	_outputPipe.close();
 
 	// Clean up any remaining environment variables
 	for (size_t i = 0; i < _env.size(); ++i)
