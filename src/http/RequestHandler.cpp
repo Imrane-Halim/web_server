@@ -23,8 +23,12 @@ bool    RequestHandler::isReqComplete() { return _request.isComplete(); }
 bool    RequestHandler::isResComplete() 
 { 
     // If CGI is running, response is not complete yet
+    //logger.debug("Checking if response is complete");
     if (_isCGI && _cgi.isRunning())
+    {
+        logger.debug("Response not complete: CGI still running");
         return false;
+    }
     return _response.isComplete(); 
 }
 bool    RequestHandler::isError() { return _request.isError(); }
@@ -144,7 +148,10 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
     if (_isCGI)
         _handleCGI(match);
     else
+    {
+        logger.debug("handle GET common is called");
         _common(match);
+    }
 }
 void    RequestHandler::_handlePOST(const RouteMatch& match)
 {

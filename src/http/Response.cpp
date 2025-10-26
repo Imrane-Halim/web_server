@@ -83,15 +83,22 @@ ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
 
     return bytes; // could be number of bytes read or -1 on error
 }
-
+#include "Logger.hpp"
 bool    HTTPResponse::isComplete() const
 {
-    if (_cgiComplete)
-        return true;
-    if (!_response.getSize())
+    Logger logger;
+    // if (_cgiComplete)
+    //     return true;
+    if (_response.getSize())
+    {
+        logger.debug("Response not complete: no response data");
         return false;
+    }
     if (_file_size != _bytes_sent)
+    {
+        logger.debug("Response not complete: file size mismatch");
         return false;
+    }
     return true;
 }
 
