@@ -127,7 +127,7 @@ void CGIHandler::onReadable()
 		if (bodySize > 0)
 		{
 			logger.debug("Sending CGI body chunk: " + intToString(bodySize) + " bytes");
-			_response.feedRAW(buffer, bodySize, true);
+			_response.feedRAW(buffer, bodySize);
 		}
 	}
 }
@@ -190,10 +190,13 @@ void CGIHandler::onError()
 	if (bytesRead > 0)
 	{
 		_cgiParser.addChunk(buffer,bytesRead);
-		if (_cgiParser.getState() == ERROR)
-		{
+	if (_cgiParser.getState() == ERROR)
+	{
 			//handle error;
+<<<<<<< HEAD
 		}
+=======
+>>>>>>> 7b3ba3468d58272bf3fdea6583eacbc9fea5c85e
 	}
 		_response.feedRAW(buffer,bytesRead);
 	{
