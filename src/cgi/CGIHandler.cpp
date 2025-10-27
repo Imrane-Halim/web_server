@@ -7,7 +7,7 @@ void CGIHandler::onEvent(uint32_t events)
 	
 	if (IS_ERROR_EVENT(events))
 	{
-		logger.error("CGIHandler: Error event received");
+		logger.debug("CGIHandler: Error event received");
 		onError();
 		return;
 	}
@@ -75,7 +75,7 @@ void CGIHandler::onReadable()
 		return;
 	}
 
-	logger.debug("CGI output parsed, output buffer: " + std::string(buffer));
+	//logger.debug("CGI output parsed, output buffer: " + std::string(buffer));
 
 	// When headers are complete, send HTTP response headers
 	if (_ShouldAddSLine && _cgiParser.getState() >= BODY)
@@ -128,8 +128,8 @@ void CGIHandler::onReadable()
 		
 		if (bodySize > 0)
 		{
-			logger.debug("Sending CGI body chunk: " + intToString(bodySize) + " bytes");
-			logger.warning("CGI body chunk data: " + std::string(buffer, bodySize));
+			//logger.debug("Sending CGI body chunk: " + intToString(bodySize) + " bytes");
+			//logger.warning("CGI body chunk data: " + std::string(buffer, bodySize));
 			_response.feedRAW(buffer, bodySize);
 		}
 	}
@@ -233,7 +233,7 @@ void CGIHandler::onError()
 		if (WIFEXITED(waitStatus))
 		{
 			int exitStatus = WEXITSTATUS(waitStatus);
-			logger.error("CGI process exited with status: " + intToString(exitStatus));
+			logger.debug("CGI process exited with status: " + intToString(exitStatus));
 		}
 		else if (WIFSIGNALED(waitStatus))
 		{

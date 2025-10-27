@@ -5,9 +5,12 @@ CGI script that echoes back POST data and request information
 import os
 import sys
 
-print("Content-Type: text/html")
-print()  # Empty line to separate headers from body
+# Write HTTP headers manually with CRLF endings
+sys.stdout.write("Content-Type: text/html\r\n")
+sys.stdout.write("Cache-Control: no-cache\r\n")
+sys.stdout.write("\r\n")  # End of headers
 
+# Now print the HTML body (normal \n fine here — browsers handle HTML)
 print("<!DOCTYPE html>")
 print("<html>")
 print("<head><title>CGI Echo Test</title></head>")
@@ -19,11 +22,11 @@ print("<h2>Environment Variables</h2>")
 print("<table border='1'>")
 print("<tr><th>Variable</th><th>Value</th></tr>")
 for key in sorted(os.environ.keys()):
-    if key.startswith('HTTP_') or key in ['REQUEST_METHOD', 'QUERY_STRING', 
-                                            'CONTENT_TYPE', 'CONTENT_LENGTH',
-                                            'SCRIPT_NAME', 'SCRIPT_FILENAME',
-                                            'SERVER_NAME', 'SERVER_PORT',
-                                            'GATEWAY_INTERFACE', 'SERVER_PROTOCOL']:
+    if key.startswith('HTTP_') or key in [
+        'REQUEST_METHOD', 'QUERY_STRING', 'CONTENT_TYPE', 'CONTENT_LENGTH',
+        'SCRIPT_NAME', 'SCRIPT_FILENAME', 'SERVER_NAME', 'SERVER_PORT',
+        'GATEWAY_INTERFACE', 'SERVER_PROTOCOL'
+    ]:
         print(f"<tr><td>{key}</td><td>{os.environ[key]}</td></tr>")
 print("</table>")
 

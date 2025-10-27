@@ -23,10 +23,10 @@ bool    RequestHandler::isReqComplete() { return _request.isComplete(); }
 bool    RequestHandler::isResComplete() 
 { 
     // If CGI is running, response is not complete yet
-    logger.debug("Checking if response is complete");
+    //logger.debug("Checking if response is complete");
      if (_isCGI && _cgi.isRunning())
      {
-         logger.debug("Response not complete: CGI still running");
+         //logger.debug("Response not complete: CGI still running");
          return false;
      }
     return _response.isComplete(); 
