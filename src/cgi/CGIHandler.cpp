@@ -492,7 +492,9 @@ void CGIHandler::reset()
 	// End any running CGI process
 	end();
 
-	// close pipes (close already checks if pipe is closed)
+	//detach and close pipes (close already checks if pipe is closed)
+	_fd_manager.detachFd(_inputPipe.write_fd());
+	_fd_manager.detachFd(_outputPipe.read_fd());
 	_inputPipe.close();
 	_outputPipe.close();
 
