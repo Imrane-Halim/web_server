@@ -112,6 +112,9 @@ bool Client::_readData()
 }
 bool Client::_sendData()
 {
+    if (_state != ST_SENDING)
+        return false;
+
     ssize_t toSend = _handler.readNextChunk(_sendBuff, BUFF_SIZE);
     
     if (toSend < 0)
@@ -159,6 +162,7 @@ bool Client::_sendData()
 
 void    Client::_closeConnection()
 {
+    logger.error("connection closed of fd: " + _strFD);
     _fd_manager.remove(get_fd());
 }
 
@@ -178,6 +182,7 @@ void    Client::_processError()
     }
     _handler.setError(400);
     _state = ST_SENDING;
+    _keepAlive = false;
     _fd_manager.modify(this, WRITE_EVENT);
 }
 void Client::_processRequest()
