@@ -69,6 +69,8 @@ public:
     bool    keepAlive();
     bool    responseStarted;
 
+    void    setError(int code);
+
     void    processRequest();
     size_t  readNextChunk(char* buff, size_t size);
 

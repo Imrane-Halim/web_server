@@ -159,7 +159,6 @@ bool Client::_sendData()
 
 void    Client::_closeConnection()
 {
-    // _response.closeFile();
     _fd_manager.remove(get_fd());
 }
 
@@ -174,13 +173,12 @@ void    Client::_processError()
 {
     if (_state == ST_ERROR)
     {
-        logger.error("Error on client fd: " + _strFD);
         _closeConnection();
         return;
     }
-    logger.debug("Parsing error on client fd: " + _strFD);
-    // todo: send status code '400 bad request'
-    // for now I am just going to ignore it
+    _handler.setError(400);
+    _state = ST_SENDING;
+    _fd_manager.modify(this, WRITE_EVENT);
 }
 void Client::_processRequest()
 {

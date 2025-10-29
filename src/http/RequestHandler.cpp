@@ -345,3 +345,5 @@ void    RequestHandler::_handleCGI(const RouteMatch& match)
     _cgiSrtartTime = time(NULL);
     _cgi.start(match);
 }
+
+void    RequestHandler::setError(int code) { _sendErrorResponse(code); }
