@@ -87,6 +87,12 @@ void    RequestHandler::processRequest()
         _sendErrorResponse(404);
         return;
     }
+    if (!match.methodAllowed)
+    {
+        logger.error("Method not allowed: " + _request.getMethod());
+        _sendErrorResponse(405);
+        return;
+    }
 
     _isCGI = match.isCGI;
     const std::string& method = _request.getMethod();
@@ -156,15 +162,27 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
 }
 void    RequestHandler::_handlePOST(const RouteMatch& match)
 {
-    if (_isCGI)
-        _handleCGI(match);
-    else
-        _common(match);
     // 1. Check if upload is allowed (match.isUploadAllowed())
     // 2. Check body size against maxBodySize (413 if too large)
     // 3. If CGI: handle via CGI
     // 4. If upload: save file to uploadDir
     // 5. Return 201 Created or appropriate response
+    // if (match.isUploadAllowed())
+    // {
+    //     // todo
+    //     // _response.startLine(201);
+    //     return;
+    // }
+    // if (size > match.maxBodySize)
+    // {
+    //     // todo
+    //      _response.startLine(413);
+    //     return;
+    // }
+    if (_isCGI)
+        _handleCGI(match);
+    else
+        _common(match);
 }
 void    RequestHandler::_handleDELETE(const RouteMatch& match)
 {
