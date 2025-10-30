@@ -145,7 +145,7 @@ void CGIHandler::onWritable()
 		return;
 	}
 
-	RingBuffer body = _Reqparser.getBody();
+	RingBuffer& body = _Reqparser.getBody();
 	size_t available = body.getSize();
 
 	if (available == 0)

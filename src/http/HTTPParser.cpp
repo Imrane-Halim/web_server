@@ -190,6 +190,7 @@ void    HTTPParser::_parseHeaders()
                 _contentLength = std::strtol(it->second.data(), &ptr, 10);
                 _state = (*ptr ? ERROR : BODY);
                 if (_state == ERROR) return;
+                _state = (_contentLength == 0) ? COMPLETE : BODY;
             }
             else if (it2 != _headers.end())
             {
