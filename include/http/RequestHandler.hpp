@@ -32,6 +32,7 @@ class RequestHandler
     void    _handleGET(const RouteMatch& match);
     void    _handlePOST(const RouteMatch& match);
     void    _handleDELETE(const RouteMatch& match);
+    void    _handleOPTIONS();
 
     // helper methods
     void        _sendErrorResponse(int code);

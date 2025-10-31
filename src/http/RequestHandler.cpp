@@ -81,6 +81,7 @@ void    RequestHandler::processRequest()
     _keepAlive = keepAlive();
 
     const RouteMatch& match = _router.match(_request.getUri(), _request.getMethod());
+    
     if (!match.isValidMatch())
     {
         logger.error("Not a valid match: " + _request.getUri());
@@ -103,6 +104,8 @@ void    RequestHandler::processRequest()
         _handlePOST(match);
     else if (method == "DELETE")
         _handleDELETE(match);
+    else if (method == "OPTIONS")
+        _handleOPTIONS();
     else
         _sendErrorResponse(501);
 }
@@ -162,6 +165,13 @@ void    RequestHandler::_handleGET(const RouteMatch& match)
 }
 void    RequestHandler::_handlePOST(const RouteMatch& match)
 {
+    std::cout << "hello]n]n\n";
+    std::string& h = _request.getHeader("content-type");
+    if (h.find("multipart") != NPOS)
+    {
+        _sendErrorResponse(415);
+        return;
+    }
     // 1. Check if upload is allowed (match.isUploadAllowed())
     // 2. Check body size against maxBodySize (413 if too large)
     // 3. If CGI: handle via CGI
@@ -210,6 +220,17 @@ void    RequestHandler::_handleDELETE(const RouteMatch& match)
     }
     else
         _sendErrorResponse(403);
+}
+void    RequestHandler::_handleOPTIONS()
+{
+    // by using this i can skip the multipart parsing from the browser XD
+    _response.startLine(204);
+    _response.addHeader("Access-Control-Allow-Origin", "*");
+    _response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    _response.addHeader("Access-Control-Allow-Headers", "content-type, x-file-size, x-filename");
+    _response.addHeader("Allow", "POST, OPTIONS");
+    _response.addHeader("Content-Length", "0");
+    _response.endHeaders();
 }
 
 void    RequestHandler::_sendErrorResponse(int code)
