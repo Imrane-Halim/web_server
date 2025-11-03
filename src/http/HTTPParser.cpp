@@ -9,6 +9,7 @@ HTTPParser::HTTPParser():
     _isChunked(false),
     _chunkSize(0),
     _readChunkSize(0),
+    _isMultiPart(false),
     _bodyHandler(NULL),
     _data(NULL),
     _isCGIResponse(false),
@@ -207,7 +208,7 @@ void    HTTPParser::_parseHeaders()
             }
             else
                 _state = _isCGIResponse ? BODY : COMPLETE;
-            return;
+            break;
         }
 
         // Find the first colon only
@@ -234,6 +235,14 @@ void    HTTPParser::_parseHeaders()
 
         _headers[key] = value;
         _buffOffset = idx + 2;
+    }
+    // why is this 
+    std::string& cont_type = getHeader("content-type");
+    if (cont_type.find("multipart/form-data") != NPOS)
+    {
+        _isMultiPart = true;
+        size_t pos = cont_type.find("boundary=");
+        _boundary = cont_type.substr(pos + 9);
     }
 }
 void    HTTPParser::_parseBody()

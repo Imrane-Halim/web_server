@@ -73,13 +73,14 @@ class HTTPParser
     size_t  _chunkSize;
     size_t  _readChunkSize; // the number of bytes read from the chunk
 
+    bool        _isMultiPart;
+    std::string _boundary;
+
     bodyHandler _bodyHandler;
     void        *_data;
 
     // cgi
     bool _isCGIResponse;
-    // file upload stuff
-    // std::string _filePath;
 
     // the current state
     parse_state _state;
@@ -110,8 +111,6 @@ public:
 
     strmap&         getHeaders(void);
     std::string&    getHeader(const std::string& key);
-
-    // std::string&    getBody(void);
 
     void    setBodyHandler(bodyHandler bh, void *data);
     
