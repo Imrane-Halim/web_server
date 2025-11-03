@@ -89,7 +89,7 @@ bool    RequestHandler::processRequest()
         _sendErrorResponse(404);
         return true;
     }
-    if (!match.methodAllowed)
+    if (!match.methodAllowed && _request.getMethod() != "OPTIONS")
     {
         logger.error("Method not allowed: " + _request.getMethod());
         _sendErrorResponse(405);
@@ -179,8 +179,9 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
         // todo
         if (_request.isComplete())
         {
-            _response.startLine(204);
-            _response.endHeaders();
+            _response.startLine(201);
+            _response.addHeader("Access-Control-Allow-Origin", "*");
+            _response.setBody("uploaded succesffuly");
         }
         RingBuffer& body = _request.getBody();
         char buff[10000];
@@ -228,12 +229,13 @@ void    RequestHandler::_handleDELETE(const RouteMatch& match)
 }
 void    RequestHandler::_handleOPTIONS()
 {
-    // by using this i can skip the multipart parsing from the browser XD
+    // when browser see a local html file, they tend to send an options 
+    // request first, i could easy skip this by just hosting it my self
+    // but who cares
     _response.startLine(204);
     _response.addHeader("Access-Control-Allow-Origin", "*");
-    _response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    _response.addHeader("Access-Control-Allow-Headers", "content-type, x-file-size, x-filename");
-    _response.addHeader("Allow", "POST, OPTIONS");
+    _response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, OPTIONS");
+    _response.addHeader("Access-Control-Allow-Headers", "Content-Type");
     _response.addHeader("Content-Length", "0");
     _response.endHeaders();
 }
