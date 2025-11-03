@@ -2,6 +2,9 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <stdexcept>
+#include <signal.h>
+
+extern volatile sig_atomic_t g_shutdown;
 
 Epoll::Epoll()
 {
@@ -65,6 +68,10 @@ std::vector<epoll_event> Epoll::wait(int timeout)
     int num_events = ::epoll_wait(_epoll_fd, events, MAX_EVENTS, timeout);
     if (num_events == -1)
     {
+        if (g_shutdown)
+        {
+            return ready_events;
+        }
         throw std::runtime_error("Failed to wait for epoll events");
     }
     

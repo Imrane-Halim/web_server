@@ -18,7 +18,7 @@ void EventLoop::run()
     logger.info("Event loop started");
     while(!g_shutdown)
     {
-        std::vector<epoll_event> events = epoll.wait(1000); // 1 second timeout for signal handling
+        std::vector<epoll_event> events = epoll.wait(); // 1 second timeout for signal handling
         for (size_t i = 0; i < events.size(); i++) 
         {
             try 

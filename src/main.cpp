@@ -112,12 +112,12 @@ int main(int ac, char **av)
         eventLoop.run();
 
         // Cleanup servers after event loop exits
-        logger.info("Cleaning up servers...");
-        for (std::vector<Server *>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
-        {
-            eventLoop.fd_manager.remove((*it)->get_fd());
-            delete *it;
-        }
+        // logger.info("Cleaning up servers...");
+        // for (std::vector<Server *>::iterator it = serverInstances.begin(); it != serverInstances.end(); ++it)
+        // {
+        //     eventLoop.fd_manager.remove((*it)->get_fd());
+        //     delete *it;
+        // }
 
         // This point should not be reached unless event_loop exits
         logger.info("Event loop exited");
