@@ -19,7 +19,7 @@ void    Multipart::setBoundry(const std::string& bound)
     _str_boundry  = "--" + bound;
     if (_str_boundry.size() >= sizeof(_tmp_buff))
     {
-        _logger.error("Boundry too large 'RFC 2046'");
+        _logger.error("Boundry too large 'RFC 2046 page 20'");
         _onError();
     }
 }
