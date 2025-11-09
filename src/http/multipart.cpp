@@ -85,14 +85,18 @@ void    Multipart::_seekBound()
     // this equation came from an example like:
     // "     ---------testfoo" CRLF
     _buff.advanceRead(_str_boundry.size() + (str - _tmp_buff));
-    _state = ST_HEADERS;
 
     s = _buff.peek(_tmp_buff, 2); // i just want to check the end bound
     if (s >= 2 && !std::strncmp(_tmp_buff, "--", 2))
     {
         _state = ST_COMPLETE;
         _buff.clear();
+        return;
     }
+
+    if (s >= 2 && !std::strncmp(_tmp_buff, CRLF, 2))
+        _buff.advanceRead(2);
+    _state = ST_HEADERS;
 }
 void    Multipart::_parseHeaders()
 {
@@ -152,13 +156,13 @@ void    Multipart::_parseData()
 
     char* bound = std::search(
         _tmp_buff,
-        _tmp_buff + sizeof(_tmp_buff),
+        _tmp_buff + s,
         _str_boundry.data(),
         _str_boundry.data() + _str_boundry.size()
     );
 
     // means the bound was found
-    if (bound != _tmp_buff + sizeof(_tmp_buff))
+    if (bound != _tmp_buff + s)
     {
         _buff.advanceRead(bound - _tmp_buff);
         _state = ST_SAVEPART;
@@ -170,11 +174,15 @@ void    Multipart::_parseData()
 }
 void    Multipart::_handleBody(size_t size)
 {
-    if (_state == ST_SAVEPART)
-        size -= 2; // to remove the CRLF before the boundry
+    if (!size) return;
     if (_part.isfile)
     {
         _outfile.write(_tmp_buff, size);
+        if (!_outfile.good())
+        {
+            _logger.error("Faild to write to file: " + _part.filePath);
+            _onError();
+        }
         // std::cout << "chunk to file: ";
         // std::cout.write(_tmp_buff, size);
         return;
