@@ -10,6 +10,7 @@ HTTPParser::HTTPParser():
     _chunkSize(0),
     _readChunkSize(0),
     _isMultiPart(false),
+    _MultiParser(_body),
     _bodyHandler(NULL),
     _data(NULL),
     _isCGIResponse(false),
@@ -62,6 +63,10 @@ void    HTTPParser::reset(void)
     _bodyHandler = NULL;
     _data = NULL;
 
+    _isMultiPart = false;
+    _boundary.clear();
+    _MultiParser.reset();
+
     //_isCGIResponse = false;
 }
 
@@ -71,6 +76,8 @@ void    HTTPParser::addChunk(char* buff, size_t size)
         return;
     _buffer.append(buff, size);
     _parse();
+    if (_isMultiPart)
+        _MultiParser.parse();
 }
 
 void    HTTPParser::_parse()
@@ -243,6 +250,7 @@ void    HTTPParser::_parseHeaders()
         _isMultiPart = true;
         size_t pos = cont_type.find("boundary=");
         _boundary = cont_type.substr(pos + 9);
+        _MultiParser.setBoundry(_boundary);
     }
 }
 void    HTTPParser::_parseBody()
@@ -341,6 +349,7 @@ void    HTTPParser::setBodyHandler(bodyHandler bh, void *data)
     _bodyHandler = bh;
     _data = data;
 }
+void    HTTPParser::setUploadDir(const std::string& dir) { _MultiParser.setUploadPath(dir); }
 
 void    HTTPParser::_decodeURI()
 {

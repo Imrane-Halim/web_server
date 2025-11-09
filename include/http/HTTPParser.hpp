@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 #include "RingBuffer.hpp"
+#include "multipart.hpp"
 
 #define CRLF        "\r\n"
 #define BUFF_SIZE   8192    // 8kb
@@ -75,6 +76,7 @@ class HTTPParser
 
     bool        _isMultiPart;
     std::string _boundary;
+    Multipart   _MultiParser;
 
     bodyHandler _bodyHandler;
     void        *_data;
@@ -113,6 +115,7 @@ public:
     std::string&    getHeader(const std::string& key);
 
     void    setBodyHandler(bodyHandler bh, void *data);
+    void    setUploadDir(const std::string& dir);
     
     void    setCGIMode(bool m);
     bool    getCGIMode(void);

@@ -188,10 +188,14 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
             _response.addHeader("Access-Control-Allow-Origin", "*");
             _response.setBody("uploaded succesffuly");
         }
-        RingBuffer& body = _request.getBody();
-        char buff[10000];
-        size_t s = body.read(buff, sizeof(buff));
-        std::cout.write(buff, s);
+        else
+        {
+            _request.setUploadDir(match.uploadDir);
+        }
+        // RingBuffer& body = _request.getBody();
+        // char buff[10000];
+        // size_t s = body.read(buff, sizeof(buff));
+        // std::cout.write(buff, s);
         return;
     }
     // if (size > match.maxBodySize)
