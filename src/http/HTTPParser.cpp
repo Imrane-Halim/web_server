@@ -32,8 +32,18 @@ std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[
 RingBuffer&      HTTPParser::getBody(void) { return _body; }
 
 parse_state     HTTPParser::getState(void) { return _state; }
-bool    HTTPParser::isComplete(void) { return _state == COMPLETE; }
-bool    HTTPParser::isError(void) { return _state == ERROR; }
+bool    HTTPParser::isComplete(void)
+{
+    if (_isMultiPart)
+        return _state == COMPLETE && _MultiParser.isComplete();
+    return _state == COMPLETE;
+}
+bool    HTTPParser::isError(void)
+{
+    if (_isMultiPart)
+        return _state == ERROR || _MultiParser.isError();
+    return _state == ERROR;
+}
 
 void    HTTPParser::setCGIMode(bool m) { _isCGIResponse = m; }
 bool    HTTPParser::getCGIMode(void) { return _isCGIResponse; }
