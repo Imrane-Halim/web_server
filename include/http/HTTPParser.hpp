@@ -129,6 +129,7 @@ public:
     void    reset();  // To reuse object for keep-alive connections
 
     void    addChunk(char* buff, size_t size); // feed next chunk to the object, parsed later
+    void    parseMultipart();
 };
 
 #endif

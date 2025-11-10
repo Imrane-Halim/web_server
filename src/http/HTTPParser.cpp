@@ -86,8 +86,6 @@ void    HTTPParser::addChunk(char* buff, size_t size)
         return;
     _buffer.append(buff, size);
     _parse();
-    if (_isMultiPart)
-        _MultiParser.parse();
 }
 
 void    HTTPParser::_parse()
@@ -386,4 +384,10 @@ void    HTTPParser::_decodeURI()
         tmp = nbr;
         _uri.replace(i, 3, tmp);
     }
+}
+
+void    HTTPParser::parseMultipart()
+{
+    if (_isMultiPart)
+        _MultiParser.parse();
 }

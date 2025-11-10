@@ -179,31 +179,25 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
     // 3. If CGI: handle via CGI
     // 4. If upload: save file to uploadDir
     // 5. Return 201 Created or appropriate response
-    if (match.isUploadAllowed())
-    {
-        // todo
-        if (_request.isComplete())
-        {
-            _response.startLine(201);
-            _response.addHeader("Access-Control-Allow-Origin", "*");
-            _response.setBody("uploaded succesffuly");
-        }
-        else
-        {
-            _request.setUploadDir(match.uploadDir);
-        }
-        // RingBuffer& body = _request.getBody();
-        // char buff[10000];
-        // size_t s = body.read(buff, sizeof(buff));
-        // std::cout.write(buff, s);
-        return;
-    }
+
     // if (size > match.maxBodySize)
     // {
     //     // todo
     //      _response.startLine(413);
     //     return;
     // }
+    if (match.isUploadAllowed())
+    {
+        _request.setUploadDir(match.uploadDir);
+        _request.parseMultipart();
+        if (_request.isComplete())
+        {
+            _response.startLine(201);
+            _response.addHeader("Access-Control-Allow-Origin", "*");
+            _response.setBody("uploaded succesffuly");
+        }
+        return;
+    }
     if (_isCGI)
         _handleCGI(match);
     else
