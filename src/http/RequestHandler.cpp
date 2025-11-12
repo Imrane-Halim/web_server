@@ -96,7 +96,7 @@ bool    RequestHandler::processRequest()
         _sendErrorResponse(404);
         return true;
     }
-    if (!match.methodAllowed && _request.getMethod() != "OPTIONS")
+    if (!match.methodAllowed)
     {
         logger.error("Method not allowed: " + _request.getMethod());
         _sendErrorResponse(405);
@@ -112,8 +112,6 @@ bool    RequestHandler::processRequest()
         _handlePOST(match);
     else if (method == "DELETE")
         _handleDELETE(match);
-    else if (method == "OPTIONS")
-        _handleOPTIONS();
     else
         _sendErrorResponse(501);
 
@@ -205,8 +203,8 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
         if (_request.isComplete())
         {
             _response.startLine(201);
-            _response.addHeader("Access-Control-Allow-Origin", "*");
-            _response.setBody("uploaded succesffuly");
+            _response.addHeader("content-length", "0");
+            _response.endHeaders();
         }
         return;
     }
@@ -242,24 +240,11 @@ void    RequestHandler::_handleDELETE(const RouteMatch& match)
     else
         _sendErrorResponse(403);
 }
-void    RequestHandler::_handleOPTIONS()
-{
-    // when browser see a local html file, they tend to send an options 
-    // request first, i could easy skip this by just hosting it my self
-    // but who cares
-    _response.startLine(204);
-    _response.addHeader("Access-Control-Allow-Origin", "*");
-    _response.addHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, OPTIONS");
-    _response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-    _response.addHeader("Content-Length", "0");
-    _response.endHeaders();
-}
 
 void    RequestHandler::_sendErrorResponse(int code)
 {
     _response.reset();
     _response.startLine(code);
-    _response.addHeader("Access-Control-Allow-Origin", "*"); 
     if (!_response.attachFile(_router.getErrorPage(code)))
         _response.setBody(getErrorPage(code));
 }
