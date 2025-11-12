@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multipart Upload Tester</title>
+    <title>File Upload</title>
     <style>
         * {
             margin: 0;
@@ -12,10 +12,10 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,50 +23,50 @@
         
         .container {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
+            border-radius: 4px;
+            padding: 48px;
             max-width: 600px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
         h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
+            color: #1a1a1a;
+            margin-bottom: 32px;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
         
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         
         label {
             display: block;
             margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
-            font-size: 14px;
+            color: #404040;
+            font-weight: 500;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            padding: 10px 12px;
+            border: 1px solid #d4d4d4;
+            border-radius: 3px;
             font-size: 14px;
-            transition: border-color 0.3s;
-            font-family: inherit;
+            transition: border-color 0.2s;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            background: #fafafa;
         }
         
         input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #404040;
+            background: white;
         }
         
         .file-input-wrapper {
@@ -85,191 +85,183 @@
         
         .file-input-label {
             display: block;
-            padding: 12px;
-            background: #f5f5f5;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
+            padding: 32px;
+            background: #fafafa;
+            border: 2px dashed #d4d4d4;
+            border-radius: 3px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            color: #737373;
+            font-size: 13px;
         }
         
         .file-input-label:hover {
-            background: #ebebeb;
-            border-color: #667eea;
+            background: #f5f5f5;
+            border-color: #a3a3a3;
         }
         
         .file-input-label.has-file {
-            background: #e8f5e9;
-            border-color: #4caf50;
+            background: white;
+            border-color: #404040;
             border-style: solid;
+            color: #1a1a1a;
         }
         
         .file-list {
-            margin-top: 8px;
+            margin-top: 12px;
             font-size: 13px;
-            color: #666;
         }
 
         .file-item {
-            padding: 8px;
-            background: #f5f5f5;
-            border-radius: 4px;
-            margin-bottom: 5px;
+            padding: 10px 12px;
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+            margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 13px;
+            color: #404040;
         }
 
         .remove-file {
-            background: rgba(225, 0, 0, 0.833);
-            color: white;
+            background: transparent;
+            color: #737373;
             border: none;
             padding: 4px 8px;
-            border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
+            text-decoration: underline;
         }
 
         .remove-file:hover {
-            background: #d32f2f;
+            color: #1a1a1a;
         }
         
         .buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 30px;
+            gap: 12px;
+            margin-top: 32px;
         }
         
         button:not(.remove-file) {
             flex: 1;
-            padding: 14px;
+            padding: 12px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .submit-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a1a;
             color: white;
         }
         
         .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            background: #404040;
         }
         
         .submit-btn:disabled {
-            opacity: 0.6;
+            opacity: 0.4;
             cursor: not-allowed;
         }
         
         .reset-btn {
-            background: #f5f5f5;
-            color: #666;
+            color: #737373;
+            border: 1px solid #000000;
         }
         
         .reset-btn:hover {
-            background: #e0e0e0;
+            background: #494949;
+            color: #ffffff;
         }
         
         .response {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 8px;
+            margin-top: 32px;
+            padding: 16px;
+            border-radius: 3px;
             display: none;
+            border: 1px solid;
         }
         
         .response.success {
-            background: #e8f5e9;
-            border: 2px solid #4caf50;
-            color: #2e7d32;
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
         }
         
         .response.error {
-            background: #ffebee;
-            border: 2px solid #f44336;
-            color: #c62828;
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
         }
         
         .response.loading {
-            background: #e3f2fd;
-            border: 2px solid #2196f3;
-            color: #1565c0;
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: #1e40af;
         }
         
         .response-title {
             font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         
         .response-body {
-            font-size: 14px;
+            font-size: 13px;
             white-space: pre-wrap;
             word-break: break-all;
+            line-height: 1.6;
         }
         
         .response-details {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 2px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 11px;
         }
         
         .progress {
             width: 100%;
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
+            height: 2px;
+            background: #e5e5e5;
+            border-radius: 1px;
             overflow: hidden;
-            margin-top: 10px;
+            margin-top: 16px;
             display: none;
         }
         
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: #1a1a1a;
             width: 0%;
             transition: width 0.3s;
-        }
-        
-        .config {
-            margin-bottom: 30px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-        }
-        
-        .config input {
-            width: 100%;
-            padding: 8px;
-            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Multipart Upload Tester</h1>
-        <p class="subtitle">Test your webserver's multipart/form-data handling</p>
-        
-        <div class="config">
-            <label for="endpoint">Server Endpoint:</label>
-            <input type="text" id="endpoint" value="http://localhost:8080/upload" placeholder="http://localhost:8080/upload">
-        </div>
+        <h1>File Upload</h1>
         
         <form id="uploadForm">
             <div class="form-group">
-                <label for="files">Select Files:</label>
+                <label for="files">Files</label>
                 <div class="file-input-wrapper">
                     <input type="file" id="files" name="files" multiple>
                     <div class="file-input-label" id="fileLabel">
-                        📁 Click to select files (multiple allowed)
+                        Select files
                     </div>
                 </div>
                 <div class="file-list" id="fileList"></div>
@@ -307,7 +299,6 @@
 
         let selectedFiles = [];
 
-        // File input handling
         fileInput.addEventListener('change', (e) => {
             const newFiles = Array.from(e.target.files);
             selectedFiles = [...selectedFiles, ...newFiles];
@@ -317,7 +308,7 @@
         function updateFileList() {
             if (selectedFiles.length > 0) {
                 fileLabel.classList.add('has-file');
-                fileLabel.textContent = `✓ ${selectedFiles.length} file(s) selected`;
+                fileLabel.textContent = `${selectedFiles.length} file(s) selected`;
                 
                 fileList.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -330,7 +321,6 @@
                     fileList.appendChild(fileItem);
                 });
 
-                // Add event listeners to remove buttons
                 document.querySelectorAll('.remove-file').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const index = parseInt(e.target.dataset.index);
@@ -340,7 +330,7 @@
                 });
             } else {
                 fileLabel.classList.remove('has-file');
-                fileLabel.textContent = '📁 Click to select files (multiple allowed)';
+                fileLabel.textContent = 'Select files';
                 fileList.innerHTML = '';
             }
         }
@@ -348,10 +338,11 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const endpoint = document.getElementById('endpoint').value;
+            // Use relative path since we're hosting on the same server
+            const endpoint = '/upload';
             
             if (selectedFiles.length === 0) {
-                showResponse('error', 'Error ✗', 'Please select at least one file to upload', '');
+                showResponse('error', 'Error', 'No files selected', '');
                 return;
             }
 
@@ -360,8 +351,7 @@
                 formData.append('files', file);
             });
             
-            // Show loading state
-            showResponse('loading', 'Uploading...', 'Please wait while we upload your files...', '');
+            showResponse('loading', 'Uploading', 'Processing request...', '');
             progress.style.display = 'block';
             progressBar.style.width = '0%';
             submitBtn.disabled = true;
@@ -369,7 +359,6 @@
             try {
                 const xhr = new XMLHttpRequest();
                 
-                // Progress tracking
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
                         const percentComplete = (e.loaded / e.total) * 100;
@@ -384,12 +373,12 @@
                     const details = `HTTP ${xhr.status} ${xhr.statusText}`;
                     
                     if (xhr.status >= 200 && xhr.status < 300) {
-                        showResponse('success', 'Success! ✓', 
-                            xhr.responseText || 'Upload completed successfully',
+                        showResponse('success', 'Success', 
+                            'Upload completed successfully',
                             details);
                     } else {
-                        showResponse('error', `Server Error (${xhr.status}) ✗`, 
-                            xhr.responseText || xhr.statusText || 'Server returned an error',
+                        showResponse('error', `Error ${xhr.status}`, 
+                            `Upload failed with status ${xhr.status}`,
                             details);
                     }
                 });
@@ -397,31 +386,27 @@
                 xhr.addEventListener('error', () => {
                     submitBtn.disabled = false;
                     progress.style.display = 'none';
-                    showResponse('error', 'Network Error ✗', 
-                        'Could not connect to server. Possible causes:\n' +
-                        '• Server is not running\n' +
-                        '• Wrong endpoint URL\n' +
-                        '• CORS policy blocking the request\n' +
-                        '• Network connectivity issue',
+                    showResponse('error', 'Network Error', 
+                        'Unable to connect to server',
                         `Target: ${endpoint}`);
                 });
                 
                 xhr.addEventListener('timeout', () => {
                     submitBtn.disabled = false;
                     progress.style.display = 'none';
-                    showResponse('error', 'Timeout Error ✗', 
-                        'The request took too long to complete. Server might be overloaded or not responding.',
+                    showResponse('error', 'Timeout', 
+                        'Request exceeded time limit',
                         `Target: ${endpoint}`);
                 });
                 
                 xhr.open('POST', endpoint);
-                xhr.timeout = 30000; // 30 second timeout
+                xhr.timeout = 30000;
                 xhr.send(formData);
                 
             } catch (error) {
                 submitBtn.disabled = false;
                 progress.style.display = 'none';
-                showResponse('error', 'Error ✗', error.message, error.stack || '');
+                showResponse('error', 'Error', error.message, error.stack || '');
             }
         });
 
