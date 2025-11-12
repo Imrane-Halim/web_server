@@ -91,6 +91,10 @@ class HTTPParser
     std::string _buffer;
     size_t      _buffOffset;
 
+    // this is the size of the request body
+    // can be used with 'client_max_body_size'
+    size_t  _bodySize;
+
     void    _decodeURI();
     void    _parseChunkedSize();
     void    _parseChunkedSegment();
@@ -125,11 +129,13 @@ public:
     bool            isError();
 
     RingBuffer& getBody(void);
+    size_t      getBodySize(void);
 
     void    reset();  // To reuse object for keep-alive connections
 
     void    addChunk(char* buff, size_t size); // feed next chunk to the object, parsed later
     void    parseMultipart();
+    void    forceError();
 };
 
 #endif

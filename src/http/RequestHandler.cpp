@@ -182,12 +182,13 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
     // 4. If upload: save file to uploadDir
     // 5. Return 201 Created or appropriate response
 
-    // if (size > match.maxBodySize)
-    // {
-    //     // todo
-    //      _response.startLine(413);
-    //     return;
-    // }
+    if (_request.getBodySize() > match.maxBodySize)
+    {
+        logger.error("max body size reached");
+        _sendErrorResponse(413);
+        _request.forceError();
+        return;
+    }
     if (match.isUploadAllowed())
     {
         if (!_isDirSet)

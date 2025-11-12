@@ -15,7 +15,8 @@ HTTPParser::HTTPParser():
     _data(NULL),
     _isCGIResponse(false),
     _state(START_LINE),
-    _buffOffset(0)
+    _buffOffset(0),
+    _bodySize(0)
 {
     _buffer.reserve(BUFF_SIZE);
 }
@@ -29,7 +30,8 @@ std::string&    HTTPParser::getFragment(void) { return _fragment; }
 strmap&         HTTPParser::getHeaders(void) { return _headers; }
 std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[key]; }
 
-RingBuffer&      HTTPParser::getBody(void) { return _body; }
+RingBuffer&     HTTPParser::getBody(void) { return _body; }
+size_t          HTTPParser::getBodySize(void) { return _bodySize; }
 
 parse_state     HTTPParser::getState(void) { return _state; }
 bool    HTTPParser::isComplete(void)
@@ -77,6 +79,7 @@ void    HTTPParser::reset(void)
     _boundary.clear();
     _MultiParser.reset();
 
+    _bodySize = 0;
     //_isCGIResponse = false;
 }
 
@@ -87,44 +90,39 @@ void    HTTPParser::addChunk(char* buff, size_t size)
     _buffer.append(buff, size);
     _parse();
 }
+void    HTTPParser::forceError() { _state = ERROR; }
 
 void    HTTPParser::_parse()
 {
-    bool made_progress = true;
-    
-    while (made_progress && _state != COMPLETE && _state != ERROR)
+label:
+    parse_state old_state = _state;
+    size_t old_offset = _buffOffset;
+
+    switch (_state)
     {
-        parse_state old_state = _state;
-
-        switch (_state)
+    case START_LINE:
+        if (!_isCGIResponse)
         {
-        case START_LINE:
-            if (!_isCGIResponse)
-            {
-                _parseStartLine();
-                break;
-            }
-        /* fall through */
-        case HEADERS: _parseHeaders(); break;
-        case BODY: _parseBody(); break;
-        case CHUNK_SIZE: _parseChunkedSize(); break;
-        case CHUNK_DATA: _parseChunkedSegment(); break;
-        case COMPLETE: case ERROR: break;
+            _parseStartLine();
+             break;
         }
-
-        made_progress = (_state != old_state);
-        // let's see what should we do with the body
-        // in other parts of the code before we parsing it
-        // if (made_progress && _state > HEADERS && _state != COMPLETE)
-        //     break;
-        // this was proven to be a big mistake,
-        // the body is already in a separate buffer so why stop XD
-        if (_buffOffset * 2 >= BUFF_SIZE)
-        {
-            _buffer.erase(0, _buffOffset);
-            _buffOffset = 0;
-        }
+    /* fall through */
+    case HEADERS    : _parseHeaders(); break;
+    case BODY       : _parseBody(); break;
+    case CHUNK_SIZE : _parseChunkedSize(); break;
+    case CHUNK_DATA : _parseChunkedSegment(); break;
+    default: break;
     }
+
+    if (_state >= BODY)
+        _bodySize += _buffOffset - old_offset;
+    if (_buffOffset * 2 >= BUFF_SIZE)
+    {
+        _buffer.erase(0, _buffOffset);
+        _buffOffset = 0;
+    }
+    if (old_state != _state)
+        goto label;
 }       
 void    HTTPParser::_parseStartLine()
 {
