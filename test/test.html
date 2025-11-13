@@ -80,6 +80,7 @@
             text-decoration: none;
             color: inherit;
             display: block;
+            background: white;
         }
         
         .route-card:hover {
@@ -171,12 +172,6 @@
             color: #404040;
         }
         
-        .info-text {
-            font-size: 13px;
-            color: #737373;
-            line-height: 1.6;
-        }
-        
         .server-info {
             display: grid;
             grid-template-columns: auto 1fr;
@@ -194,13 +189,24 @@
             color: #1a1a1a;
         }
         
-        .delete-btn {
+        .delete-input {
             width: 100%;
-            text-align: left;
-            background: none;
-            border: none;
-            font: inherit;
-            cursor: pointer;
+            padding: 8px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 12px;
+            transition: border-color 0.2s;
+        }
+        
+        .delete-input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+        
+        .delete-input::placeholder {
+            color: #a3a3a3;
         }
     </style>
 </head>
@@ -298,13 +304,20 @@
                     </div>
                 </a>
                 
-                <button class="route-card delete-btn" id="deleteBtn">
+                <div class="route-card" id="deleteCard">
                     <div class="route-path">/delete</div>
                     <div class="route-desc">Delete resources from server temporary storage</div>
                     <div class="route-meta">
                         <span class="badge badge-delete">DELETE</span>
                     </div>
-                </button>
+                    <input 
+                        type="text" 
+                        class="delete-input" 
+                        id="deleteInput" 
+                        placeholder="Enter filename and press Enter"
+                        onclick="event.stopPropagation()"
+                    >
+                </div>
             </div>
         </div>
         
@@ -330,29 +343,45 @@
                 <dd>8080</dd>
                 <dt>Server Name:</dt>
                 <dd>localhost</dd>
-                <dt>CGI Timeout:</dt>
-                <dd>5 seconds</dd>
             </dl>
         </div>
     </div>
 
     <script>
-        // Handle the DELETE button since it can't be a regular link
-        document.getElementById('deleteBtn').addEventListener('click', () => {
-            if (confirm('This will send a DELETE request to /delete. Continue?')) {
-                fetch('/delete', {
-                    method: 'DELETE'
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('DELETE request sent successfully');
-                    } else {
-                        alert('DELETE request failed with status: ' + response.status);
-                    }
-                })
-                .catch(error => {
-                    alert('Error sending DELETE request: ' + error.message);
-                });
+        const deleteCard = document.getElementById('deleteCard');
+        const deleteInput = document.getElementById('deleteInput');
+
+        deleteInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const filename = deleteInput.value.trim();
+                if (!filename) {
+                    alert('Please enter a filename');
+                    return;
+                }
+
+                const path = `/delete/${filename}`;
+                if (confirm(`Send DELETE request to ${path}?`)) {
+                    fetch(path, {
+                        method: 'DELETE'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            alert(`DELETE request to ${path} sent successfully`);
+                            deleteInput.value = '';
+                        } else {
+                            alert(`DELETE request failed with status: ${response.status}`);
+                        }
+                    })
+                    .catch(error => {
+                        alert(`Error sending DELETE request: ${error.message}`);
+                    });
+                }
+            }
+        });
+
+        deleteCard.addEventListener('click', (e) => {
+            if (e.target !== deleteInput) {
+                deleteInput.focus();
             }
         });
     </script>
