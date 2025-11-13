@@ -32,6 +32,40 @@
             margin-bottom: 32px;
         }
         
+        .status {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 16px;
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
         h1 {
             color: #1a1a1a;
             font-size: 32px;
@@ -119,10 +153,22 @@
             letter-spacing: 0.03em;
         }
         
-        .badge-method {
+        .badge-get {
             background: #f0f9ff;
             color: #0369a1;
             border: 1px solid #bae6fd;
+        }
+        
+        .badge-post {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+        
+        .badge-delete-method {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
         }
         
         .badge-cgi {
@@ -213,6 +259,7 @@
 <body>
     <div class="container">
         <header>
+            <div class="status">Server Online</div>
             <h1>Server Routes</h1>
             <div class="subtitle">localhost:8080</div>
         </header>
@@ -224,7 +271,7 @@
                     <div class="route-path">/home</div>
                     <div class="route-desc">Main website entry point serving static content</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
+                        <span class="badge badge-get">GET</span>
                     </div>
                 </a>
                 
@@ -232,7 +279,7 @@
                     <div class="route-path">/files</div>
                     <div class="route-desc">Browse directory contents with automatic indexing</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
+                        <span class="badge badge-get">GET</span>
                         <span class="badge badge-autoindex">Autoindex</span>
                     </div>
                 </a>
@@ -246,7 +293,7 @@
                     <div class="route-path">/cgi/hello</div>
                     <div class="route-desc">Simple hello world CGI script demonstration</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
+                        <span class="badge badge-get">GET</span>
                         <span class="badge badge-cgi">Python</span>
                     </div>
                 </a>
@@ -255,8 +302,8 @@
                     <div class="route-path">/cgi/echo</div>
                     <div class="route-desc">Echo back request data for testing purposes</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
-                        <span class="badge badge-method">POST</span>
+                        <span class="badge badge-get">GET</span>
+                        <span class="badge badge-post">POST</span>
                         <span class="badge badge-cgi">Python</span>
                     </div>
                 </a>
@@ -265,8 +312,8 @@
                     <div class="route-path">/cgi/body</div>
                     <div class="route-desc">Process and display POST request body data</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
-                        <span class="badge badge-method">POST</span>
+                        <span class="badge badge-get">GET</span>
+                        <span class="badge badge-post">POST</span>
                         <span class="badge badge-cgi">Python</span>
                     </div>
                 </a>
@@ -280,8 +327,8 @@
                     <div class="route-path">/upload/file</div>
                     <div class="route-desc">Upload files to the server storage</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
-                        <span class="badge badge-method">POST</span>
+                        <span class="badge badge-get">GET</span>
+                        <span class="badge badge-post">POST</span>
                         <span class="badge badge-upload">Upload</span>
                     </div>
                 </a>
@@ -290,7 +337,8 @@
                     <div class="route-path">/session/cookie</div>
                     <div class="route-desc">Cookie handling and management demonstration</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
+                        <span class="badge badge-get">GET</span>
+                        <span class="badge badge-cgi">Python</span>
                     </div>
                 </a>
                 
@@ -298,7 +346,8 @@
                     <div class="route-path">/session/manage</div>
                     <div class="route-desc">Session management with persistent storage</div>
                     <div class="route-meta">
-                        <span class="badge badge-method">GET</span>
+                        <span class="badge badge-get">GET</span>
+                        <span class="badge badge-cgi">Python</span>
                     </div>
                 </a>
                 
@@ -306,7 +355,7 @@
                     <div class="route-path">/delete</div>
                     <div class="route-desc">Delete resources from server temporary storage</div>
                     <div class="route-meta">
-                        <span class="badge badge-delete">DELETE</span>
+                        <span class="badge badge-delete-method">DELETE</span>
                     </div>
                     <input 
                         type="text" 
