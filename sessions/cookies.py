@@ -21,7 +21,7 @@ if 'HTTP_COOKIE' in os.environ:
 visits += 1
 
 # Set the updated cookie
-sys.stdout.write(f"Set-Cookie: visits={visits}\r\n")
+sys.stdout.write(f"Set-Cookie: visits={visits}; path=/cookies\r\n")
 sys.stdout.write("\r\n")  # End of headers
 
 print("""<!DOCTYPE html>
