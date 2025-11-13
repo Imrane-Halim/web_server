@@ -50,14 +50,14 @@ void EventLoop::expireTimeouts()
     for (std::map<int, EventHandler*>::iterator it = handlers.begin(); it != handlers.end(); ++it)
     {
         time_t now = time(NULL);
-        logger.info("Checking timeout for fd: " + SSTR(it->first));
-        logger.info("time now : " + SSTR(now) + " will expires in: " + SSTR(it->second->getExpiresAt()) + " seconds");
+       // logger.info("Checking timeout for fd: " + SSTR(it->first));
+       // logger.info("time now : " + SSTR(now) + " will expires in: " + SSTR(it->second->getExpiresAt()) + " seconds");
         EventHandler* handler = it->second;
         if (!handler)
             continue;
         if (handler->getExpiresAt() <= now)
         {
-            it++;
+            //it++;
             try {
                 handler->onEvent(TIMEOUT_EVENT);
             } catch (const std::exception &e) {
