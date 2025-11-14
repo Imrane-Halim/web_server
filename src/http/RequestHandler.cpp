@@ -291,30 +291,59 @@ std::string RequestHandler::_getDictListing(const std::string& path)
     // final html code
     std::string html;
     html += "<!DOCTYPE html>\n";
-    html += "<html>\n<head>\n";
-    html += "<meta charset=\"utf-8\">\n";
+    html += "<html lang=\"en\">\n<head>\n";
+    html += "<meta charset=\"UTF-8\">\n";
+    html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
     html += "<title>Index of " + reqUri + "</title>\n";
     html += "<style>\n";
-    html += "body { font-family: monospace; margin: 40px; }\n";
-    html += "h1 { border-bottom: 1px solid #ccc; padding-bottom: 10px; }\n";
-    html += "table { border-collapse: collapse; width: 100%; }\n";
-    html += "th { text-align: left; padding: 8px; border-bottom: 2px solid #ddd; }\n";
-    html += "td { padding: 8px; border-bottom: 1px solid #eee; }\n";
-    html += "tr:hover { background-color: #f5f5f5; }\n";
-    html += "a { text-decoration: none; color: #0066cc; }\n";
-    html += "a:hover { text-decoration: underline; }\n";
-    html += ".dir::before { content: '📁 '; }\n";
-    html += ".file::before { content: '📄 '; }\n";
-    html += ".info { color: #666; }\n";
+    html += "* { margin: 0; padding: 0; box-sizing: border-box; }\n";
+    html += "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; padding: 40px 20px; }\n";
+    html += ".container { max-width: 900px; margin: 0 auto; }\n";
+    html += "header { background: white; border-radius: 4px; padding: 30px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); margin-bottom: 32px; }\n";
+    html += ".status { display: inline-flex; align-items: center; padding: 8px 16px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; border-radius: 3px; font-size: 12px; font-weight: 500; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.05em; }\n";
+    html += ".status::before { content: ''; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; margin-right: 8px; animation: pulse 2s ease-in-out infinite; }\n";
+    html += "@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }\n";
+    html += "h1 { color: #1a1a1a; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }\n";
+    html += ".subtitle { color: #737373; font-size: 14px; font-family: 'SF Mono', Monaco, 'Courier New', monospace; }\n";
+    html += ".section { background: white; border-radius: 4px; padding: 32px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }\n";
+    html += ".section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #404040; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #e5e5e5; }\n";
+    html += "table { width: 100%; border-collapse: collapse; }\n";
+    html += "thead th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #737373; border-bottom: 2px solid #e5e5e5; }\n";
+    html += "tbody tr { border-bottom: 1px solid #f5f5f5; transition: background-color 0.2s; }\n";
+    html += "tbody tr:hover { background-color: #fafafa; }\n";
+    html += "tbody td { padding: 16px; font-size: 14px; color: #1a1a1a; }\n";
+    html += "tbody td.name { display: flex; align-items: center; gap: 8px; }\n";
+    html += "tbody td.name a { font-family: 'SF Mono', Monaco, 'Courier New', monospace; }\n";
+    html += "tbody td.size, tbody td.date { color: #737373; font-size: 13px; }\n";
+    html += "a { text-decoration: none; color: #1a1a1a; }\n";
+    html += "a:hover { color: #0066cc; }\n";
+    html += ".badge { font-size: 11px; padding: 4px 8px; border-radius: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; display: inline-block; }\n";
+    html += ".badge-dir { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }\n";
+    html += ".badge-file { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }\n";
+    html += ".info-box { background: #fafafa; border: 1px solid #e5e5e5; border-radius: 3px; padding: 20px; margin-top: 24px; }\n";
+    html += ".info-title { font-weight: 600; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #404040; }\n";
+    html += ".server-info { font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 13px; color: #737373; }\n";
     html += "</style>\n";
     html += "</head>\n<body>\n";
-    html += "<h3>WebSrv 1.0</h3>\n";
+    html += "<div class=\"container\">\n";
+    html += "<header>\n";
+    html += "<div class=\"status\">Directory Listing</div>\n";
     html += "<h1>Index of " + reqUri + "</h1>\n";
+    html += "<div class=\"subtitle\">WebSrv 1.0</div>\n";
+    html += "<div class=\"info-box\">\n";
+    html += "<div class=\"info-title\">System Path</div>\n";
+    html += "<div class=\"server-info\">" + path + "</div>\n";
+    html += "</div>\n";
+    html += "</div>\n";
+    html += "</div>\n";
+    html += "</header>\n";
+    html += "<div class=\"section\">\n";
+    html += "<div class=\"section-title\">Contents</div>\n";
     html += "<table>\n";
     html += "<thead>\n<tr>\n";
     html += "<th>Name</th>\n";
-    html += "<th class=\"info\">Size</th>\n";
-    html += "<th class=\"info\">Last Modified</th>\n";
+    html += "<th>Size</th>\n";
+    html += "<th>Last Modified</th>\n";
     html += "</tr>\n</thead>\n<tbody>\n";
 
     // this will be used to store entries data
@@ -351,13 +380,13 @@ std::string RequestHandler::_getDictListing(const std::string& path)
         {
             size_t fileSize = entries[i].data.st_size;
             if (fileSize < 1024)
-                sizeStr = SSTR(fileSize) + "B";
+                sizeStr = SSTR(fileSize) + " B";
             else if (fileSize < 1024 * 1024)
-                sizeStr = SSTR(fileSize / 1024) + "KB";
+                sizeStr = SSTR(fileSize / 1024) + " KB";
             else if (fileSize < 1024 * 1024 * 1024)
-                sizeStr = SSTR(fileSize / (1024 * 1024)) + "MB";
+                sizeStr = SSTR(fileSize / (1024 * 1024)) + " MB";
             else
-                sizeStr = SSTR(fileSize / (1024 * 1024 * 1024)) + "GB";
+                sizeStr = SSTR(fileSize / (1024 * 1024 * 1024)) + " GB";
         }
 
         // format time
@@ -365,14 +394,16 @@ std::string RequestHandler::_getDictListing(const std::string& path)
         struct tm *time = std::localtime(&entries[i].data.st_mtime);
         if (time)
         {
-            std::strftime(timeBuff, sizeof(timeBuff), "%Y-%m-%d %H:%M:%S", time);
+            std::strftime(timeBuff, sizeof(timeBuff), "%Y-%m-%d %H:%M", time);
             dateStr = timeBuff;
         }
 
         html += "<tr>\n";
-        html += "<td><a href=\"" + link + "\" class=\"" +
-            (isDir ? "dir" : "file") + "\">" + entries[i].name +
-            (isDir ? "/" : "") + "</a></td>\n";
+        html += "<td class=\"name\">";
+        html += "<span class=\"badge badge-" + std::string(isDir ? "dir" : "file") + "\">" +
+                std::string(isDir ? "DIR" : "FILE") + "</span>";
+        html += "<a href=\"" + link + "\">" + entries[i].name +
+                (isDir ? "/" : "") + "</a></td>\n";
         html += "<td class=\"size\">" + sizeStr + "</td>\n";
         html += "<td class=\"date\">" + dateStr + "</td>\n";
         html += "</tr>\n";
