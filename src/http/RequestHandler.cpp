@@ -290,6 +290,8 @@ std::string RequestHandler::_getDictListing(const std::string& path)
 
     // final html code
     std::string html;
+    html.reserve(BUFF_SIZE * 2);
+
     html += "<!DOCTYPE html>\n";
     html += "<html lang=\"en\">\n<head>\n";
     html += "<meta charset=\"UTF-8\">\n";
