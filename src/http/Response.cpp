@@ -6,6 +6,7 @@ HTTPResponse::HTTPResponse(const std::string& version):
     _file_fd(-1),
     _file_size(0),
     _bytes_sent(0)
+    //_cgiComplete(false)
 {}
 
 HTTPResponse::~HTTPResponse()
@@ -82,13 +83,22 @@ ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
 
     return bytes; // could be number of bytes read or -1 on error
 }
-
+#include "Logger.hpp"
 bool    HTTPResponse::isComplete() const
 {
-    if (!_response.getSize())
+    Logger logger;
+    // if (_cgiComplete)
+    //     return true;
+    if (_response.getSize())
+    {
+        logger.debug("Response not complete: no response data");
         return false;
+    }
     if (_file_size != _bytes_sent)
+    {
+        logger.debug("Response not complete: file size mismatch");
         return false;
+    }
     return true;
 }
 
@@ -218,5 +228,30 @@ const std::string HTTPResponse::_getStatus(int code)
         default:
             return "Unknown";
     }
+}
+
+void    HTTPResponse::feedRAW(const char* data, size_t size)
+{
+    std::stringstream ss;
+    ss << std::hex << size;
+    std::string sizeStr = ss.str();
+
+    _response.write(sizeStr.data(), sizeStr.size());
+    _response.write(CRLF, 2);
+
+    _response.write(data, size);
+    
+    _response.write(CRLF, 2); 
+}
+void    HTTPResponse::feedRAW(const std::string& data)
+{
+    std::stringstream ss;
+    ss << std::hex << data.size();
+    std::string sizeStr = ss.str();
+
+    _response.write(sizeStr.data(), sizeStr.size());
+    _response.write(CRLF, 2);
+    _response.write(data.data(), data.size());
+    _response.write(CRLF, 2);
 }
 

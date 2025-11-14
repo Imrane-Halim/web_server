@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "RingBuffer.hpp"
+#include "multipart.hpp"
+
 #define CRLF        "\r\n"
 #define BUFF_SIZE   8192    // 8kb
 #define NPOS        std::string::npos
@@ -63,7 +66,7 @@ class HTTPParser
     strmap      _headers;
 
     // the requst body (default for now)
-    std::string _body;
+    RingBuffer  _body;
     size_t      _contentLength;
     size_t      _bytesRead;
 
@@ -71,13 +74,15 @@ class HTTPParser
     size_t  _chunkSize;
     size_t  _readChunkSize; // the number of bytes read from the chunk
 
+    bool        _isMultiPart;
+    std::string _boundary;
+    Multipart   _MultiParser;
+
     bodyHandler _bodyHandler;
     void        *_data;
 
     // cgi
     bool _isCGIResponse;
-    // file upload stuff
-    // std::string _filePath;
 
     // the current state
     parse_state _state;
@@ -86,6 +91,11 @@ class HTTPParser
     std::string _buffer;
     size_t      _buffOffset;
 
+    // this is the size of the request body
+    // can be used with 'client_max_body_size'
+    size_t  _bodySize;
+
+    void    _decodeURI();
     void    _parseChunkedSize();
     void    _parseChunkedSegment();
 
@@ -108,9 +118,8 @@ public:
     strmap&         getHeaders(void);
     std::string&    getHeader(const std::string& key);
 
-    // std::string&    getBody(void);
-
     void    setBodyHandler(bodyHandler bh, void *data);
+    void    setUploadDir(const std::string& dir);
     
     void    setCGIMode(bool m);
     bool    getCGIMode(void);
@@ -119,12 +128,14 @@ public:
     bool            isComplete();
     bool            isError();
 
-    const char* getBody(void);
+    RingBuffer& getBody(void);
     size_t      getBodySize(void);
 
     void    reset();  // To reuse object for keep-alive connections
 
     void    addChunk(char* buff, size_t size); // feed next chunk to the object, parsed later
+    void    parseMultipart();
+    void    forceError();
 };
 
 #endif

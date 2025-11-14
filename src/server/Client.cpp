@@ -8,10 +8,10 @@ std::string intToString(int value)
 }
 
 Client::Client(int socket_fd, ServerConfig &config, FdManager &fdm) :
-    EventHandler(config, fdm),
+    EventHandler(config, fdm, time(NULL) + DEFAULT_CLIENT_TIMEOUT),
     _socket(socket_fd),
     _resp("HTTP/1.1"),
-    _handler(config, _req, _resp),
+    _handler(config, _req, _resp, fdm),
     _strFD(intToString(socket_fd)),
     _state(ST_READING)
 {
@@ -26,10 +26,11 @@ Client::~Client()
 int Client::get_fd() const { return _socket.get_fd(); }
 
 
-
 /*--------------------------------------------------------*/
 void Client::onEvent(uint32_t events)
 {
+    //logger.debug("Event on client fd: " + _strFD + " events: " + intToString(events));
+    _updateExpiresAt(time(NULL) + DEFAULT_CLIENT_TIMEOUT);
     if (IS_ERROR_EVENT(events)) {
         onError();
         return;
@@ -38,6 +39,8 @@ void Client::onEvent(uint32_t events)
         onReadable();
     if (IS_WRITE_EVENT(events))
         onWritable();
+    if (IS_TIMEOUT_EVENT(events))
+        onTimeout();
 }
 
 void    Client::onError()
@@ -77,7 +80,8 @@ void    Client::onWritable()
 
 bool Client::_readData()
 {
-    if (_state != ST_READING)
+    // we can process the request even if it is not complete
+    if (_state != ST_READING && _state != ST_PROCESSING)
         return false;
 
     ssize_t size = _socket.recv(_readBuff, BUFF_SIZE - 1, 0);
@@ -102,8 +106,11 @@ bool Client::_readData()
         _state = ST_PARSEERROR;
         return false;
     }
-    if (_handler.isReqComplete())
+    if (_handler.isReqHeaderComplete())
     {
+        // after parsing the header,
+        // we decide what to do with the body if any
+        logger.info("request processing started: " + _strFD);
         _state = ST_PROCESSING;
         return false;
     }
@@ -112,7 +119,11 @@ bool Client::_readData()
 }
 bool Client::_sendData()
 {
+    if (_state != ST_SENDING)
+        return false;
+
     ssize_t toSend = _handler.readNextChunk(_sendBuff, BUFF_SIZE);
+    
     if (toSend < 0)
     {
         logger.error("Error on Client fd: " + _strFD);
@@ -121,12 +132,20 @@ bool Client::_sendData()
     }
     if (toSend == 0)
     {
-        logger.debug("Client send response complete fd: " + _strFD);
-        _state = ST_SENDCOMPLETE;
-        return false;
+        // Only consider response complete if handler confirms it
+        if (_handler.isResComplete())
+        {
+            logger.debug("Client send response complete fd: " + _strFD);
+            _state = ST_SENDCOMPLETE;
+            return false;
+        }
+        // No data available yet, but response not complete (e.g., waiting for CGI)
+        return true;
     }
-    
+    _handler.responseStarted = true;
     ssize_t sent = _socket.send(_sendBuff, toSend, 0);
+    //logger.debug("Sending " + intToString(toSend) + " bytes to client fd: " + _strFD);
+    //logger.debug(_sendBuff);
     if (sent < 0)
     {
         logger.error("Can't send data on client fd: " + _strFD);
@@ -151,7 +170,7 @@ bool Client::_sendData()
 
 void    Client::_closeConnection()
 {
-    // _response.closeFile();
+    logger.error("connection closed of fd: " + _strFD);
     _fd_manager.remove(get_fd());
 }
 
@@ -166,18 +185,19 @@ void    Client::_processError()
 {
     if (_state == ST_ERROR)
     {
-        logger.error("Error on client fd: " + _strFD);
         _closeConnection();
         return;
     }
-    logger.debug("Parsing error on client fd: " + _strFD);
-    // todo: send status code '400 bad request'
-    // for now I am just going to ignore it
+    _handler.setError(400);
+    _state = ST_SENDING;
+    _keepAlive = false;
+    _fd_manager.modify(this, WRITE_EVENT);
 }
 void Client::_processRequest()
 {
     _keepAlive = _shouldKeepAlive();
-    _handler.processRequest();
+    if (!_handler.processRequest() && !_handler.isError())
+        return;
     _state = ST_SENDING;
     _fd_manager.modify(this, WRITE_EVENT);
 }
@@ -186,3 +206,21 @@ bool    Client::_shouldKeepAlive()
 {
     return _handler.keepAlive();
 }
+
+int Client::get_fd()
+{
+    return (_socket.get_fd());
+}
+
+void Client::destroy()
+{
+    logger.debug("Client::destroy() called for fd: " + _strFD);
+    delete this;
+}
+
+void Client::onTimeout()
+{
+    logger.error("Timeout on client fd: " + _strFD);
+    _fd_manager.remove(get_fd());
+}
+

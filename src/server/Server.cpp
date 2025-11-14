@@ -7,7 +7,7 @@
 #define SSTR(x) static_cast<std::ostringstream &>((std::ostringstream() << x)).str()
 
 Server::Server(ServerConfig &config, FdManager &fdm) 
-    : EventHandler(config, fdm) 
+    : EventHandler(config, fdm, -1) 
 {
     Logger logger;
     
@@ -49,6 +49,8 @@ void Server::onEvent(uint32_t events)
         onReadable();
     if (IS_WRITE_EVENT(events)) 
         onWritable();
+    if (IS_TIMEOUT_EVENT(events))
+        onTimeout();
 }
 
 void Server::onReadable()
@@ -85,7 +87,23 @@ void Server::onError()
     Logger logger;
     logger.error("Error on server socket fd: " + SSTR(get_fd()));
     
-    // Close socket and remove from epoll
-    _socket.close();
     _fd_manager.remove(get_fd());
+}
+
+int Server::get_fd()
+{
+    return (_socket.get_fd());
+}
+
+
+void Server::destroy()
+{
+    delete this;
+}
+
+void Server::onTimeout()
+{
+    // Server socket should not have timeouts
+    Logger logger;
+    logger.warning("Unexpected timeout event on server socket");
 }

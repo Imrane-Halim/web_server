@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 4px;
+            padding: 48px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 32px;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #404040;
+            font-weight: 500;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d4d4d4;
+            border-radius: 3px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            background: #fafafa;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #404040;
+            background: white;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 32px;
+            background: #fafafa;
+            border: 2px dashed #d4d4d4;
+            border-radius: 3px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #737373;
+            font-size: 13px;
+        }
+        
+        .file-input-label:hover {
+            background: #f5f5f5;
+            border-color: #a3a3a3;
+        }
+        
+        .file-input-label.has-file {
+            background: white;
+            border-color: #404040;
+            border-style: solid;
+            color: #1a1a1a;
+        }
+        
+        .file-list {
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .file-item {
+            padding: 10px 12px;
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #404040;
+        }
+
+        .remove-file {
+            background: transparent;
+            color: #737373;
+            border: none;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: underline;
+        }
+
+        .remove-file:hover {
+            color: #1a1a1a;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+        
+        button:not(.remove-file) {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .submit-btn {
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            background: #404040;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .reset-btn {
+            color: #737373;
+            border: 1px solid #000000;
+        }
+        
+        .reset-btn:hover {
+            background: #494949;
+            color: #ffffff;
+        }
+        
+        .response {
+            margin-top: 32px;
+            padding: 16px;
+            border-radius: 3px;
+            display: none;
+            border: 1px solid;
+        }
+        
+        .response.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+        
+        .response.error {
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #991b1b;
+        }
+        
+        .response.loading {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: #1e40af;
+        }
+        
+        .response-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .response-body {
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        
+        .response-details {
+            margin-top: 12px;
+            padding: 8px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 2px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 11px;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 2px;
+            background: #e5e5e5;
+            border-radius: 1px;
+            overflow: hidden;
+            margin-top: 16px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #1a1a1a;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>File Upload</h1>
+        
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="files">Files</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="files" name="files" multiple>
+                    <div class="file-input-label" id="fileLabel">
+                        Select files
+                    </div>
+                </div>
+                <div class="file-list" id="fileList"></div>
+            </div>
+            
+            <div class="buttons">
+                <button type="submit" class="submit-btn">Upload</button>
+                <button type="reset" class="reset-btn">Reset</button>
+            </div>
+            
+            <div class="progress" id="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </form>
+        
+        <div class="response" id="response">
+            <div class="response-title" id="responseTitle"></div>
+            <div class="response-body" id="responseBody"></div>
+            <div class="response-details" id="responseDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('uploadForm');
+        const response = document.getElementById('response');
+        const responseTitle = document.getElementById('responseTitle');
+        const responseBody = document.getElementById('responseBody');
+        const responseDetails = document.getElementById('responseDetails');
+        const progress = document.getElementById('progress');
+        const progressBar = document.getElementById('progressBar');
+        const fileInput = document.getElementById('files');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileList = document.getElementById('fileList');
+        const submitBtn = form.querySelector('.submit-btn');
+
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            const newFiles = Array.from(e.target.files);
+            selectedFiles = [...selectedFiles, ...newFiles];
+            updateFileList();
+        });
+
+        function updateFileList() {
+            if (selectedFiles.length > 0) {
+                fileLabel.classList.add('has-file');
+                fileLabel.textContent = `${selectedFiles.length} file(s) selected`;
+                
+                fileList.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <span>${file.name} (${formatFileSize(file.size)})</span>
+                        <button type="button" class="remove-file" data-index="${index}">Remove</button>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+
+                document.querySelectorAll('.remove-file').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        selectedFiles.splice(index, 1);
+                        updateFileList();
+                    });
+                });
+            } else {
+                fileLabel.classList.remove('has-file');
+                fileLabel.textContent = 'Select files';
+                fileList.innerHTML = '';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Use relative path since we're hosting on the same server
+            const endpoint = '/upload';
+            
+            if (selectedFiles.length === 0) {
+                showResponse('error', 'Error', 'No files selected', '');
+                return;
+            }
+
+            const formData = new FormData();
+            selectedFiles.forEach((file) => {
+                formData.append('files', file);
+            });
+            
+            showResponse('loading', 'Uploading', 'Processing request...', '');
+            progress.style.display = 'block';
+            progressBar.style.width = '0%';
+            submitBtn.disabled = true;
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                });
+                
+                xhr.addEventListener('load', () => {
+                    submitBtn.disabled = false;
+                    progress.style.display = 'none';
+                    
+                    const details = `HTTP ${xhr.status} ${xhr.statusText}`;
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        showResponse('success', 'Success', 
+                            'Upload completed successfully',
+                            details);
+                    } else {
+                        showResponse('error', `Error ${xhr.status}`, 
+                            `Upload failed with status ${xhr.status}`,
+                            details);
+                    }
+                });
+                
+                xhr.addEventListener('error', () => {
+                    submitBtn.disabled = false;
+                    progress.style.display = 'none';
+                    showResponse('error', 'Network Error', 
+                        'Unable to connect to server',
+                        `Target: ${endpoint}`);
+                });
+                
+                xhr.addEventListener('timeout', () => {
+                    submitBtn.disabled = false;
+                    progress.style.display = 'none';
+                    showResponse('error', 'Timeout', 
+                        'Request exceeded time limit',
+                        `Target: ${endpoint}`);
+                });
+                
+                xhr.open('POST', endpoint);
+                xhr.timeout = 30000;
+                xhr.send(formData);
+                
+            } catch (error) {
+                submitBtn.disabled = false;
+                progress.style.display = 'none';
+                showResponse('error', 'Error', error.message, error.stack || '');
+            }
+        });
+
+        form.addEventListener('reset', () => {
+            response.style.display = 'none';
+            selectedFiles = [];
+            fileInput.value = '';
+            updateFileList();
+            progress.style.display = 'none';
+        });
+
+        function showResponse(type, title, body, details) {
+            response.className = 'response ' + type;
+            response.style.display = 'block';
+            responseTitle.textContent = title;
+            responseBody.textContent = body;
+            
+            if (details) {
+                responseDetails.textContent = details;
+                responseDetails.style.display = 'block';
+            } else {
+                responseDetails.style.display = 'none';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+        }
+    </script>
+
+</body>
+</html>

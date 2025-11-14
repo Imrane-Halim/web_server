@@ -3,19 +3,22 @@
 #include <cstdio>
 
 HTTPParser::HTTPParser():
+    _body(BUFF_SIZE * 16),
     _contentLength(0),
     _bytesRead(0),
     _isChunked(false),
     _chunkSize(0),
     _readChunkSize(0),
+    _isMultiPart(false),
+    _MultiParser(_body),
     _bodyHandler(NULL),
     _data(NULL),
     _isCGIResponse(false),
     _state(START_LINE),
-    _buffOffset(0)
+    _buffOffset(0),
+    _bodySize(0)
 {
     _buffer.reserve(BUFF_SIZE);
-    _body.reserve(BUFF_SIZE);
 }
 
 std::string&    HTTPParser::getMethod(void) { return _method; }
@@ -27,12 +30,22 @@ std::string&    HTTPParser::getFragment(void) { return _fragment; }
 strmap&         HTTPParser::getHeaders(void) { return _headers; }
 std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[key]; }
 
-const char*     HTTPParser::getBody(void) { return _body.data(); }
-size_t          HTTPParser::getBodySize(void) { return _body.size(); }
+RingBuffer&     HTTPParser::getBody(void) { return _body; }
+size_t          HTTPParser::getBodySize(void) { return _bodySize; }
 
 parse_state     HTTPParser::getState(void) { return _state; }
-bool    HTTPParser::isComplete(void) { return _state == COMPLETE; }
-bool    HTTPParser::isError(void) { return _state == ERROR; }
+bool    HTTPParser::isComplete(void)
+{
+    if (_isMultiPart)
+        return _state == COMPLETE && _MultiParser.isComplete();
+    return _state == COMPLETE;
+}
+bool    HTTPParser::isError(void)
+{
+    if (_isMultiPart)
+        return _state == ERROR || _MultiParser.isError();
+    return _state == ERROR;
+}
 
 void    HTTPParser::setCGIMode(bool m) { _isCGIResponse = m; }
 bool    HTTPParser::getCGIMode(void) { return _isCGIResponse; }
@@ -45,7 +58,10 @@ void    HTTPParser::reset(void)
     _body.clear();
     _headers.clear();
     
-    _state = START_LINE;
+    if (_isCGIResponse)
+        _state = HEADERS;
+    else
+        _state = START_LINE;
     _buffer.clear();
     _buffOffset = 0;
 
@@ -59,7 +75,12 @@ void    HTTPParser::reset(void)
     _bodyHandler = NULL;
     _data = NULL;
 
-    _isCGIResponse = false;
+    _isMultiPart = false;
+    _boundary.clear();
+    _MultiParser.reset();
+
+    _bodySize = 0;
+    //_isCGIResponse = false;
 }
 
 void    HTTPParser::addChunk(char* buff, size_t size)
@@ -69,38 +90,39 @@ void    HTTPParser::addChunk(char* buff, size_t size)
     _buffer.append(buff, size);
     _parse();
 }
+void    HTTPParser::forceError() { _state = ERROR; }
 
 void    HTTPParser::_parse()
 {
-    bool made_progress = true;
-    
-    while (made_progress && _state != COMPLETE && _state != ERROR)
+label:
+    parse_state old_state = _state;
+    size_t old_offset = _buffOffset;
+
+    switch (_state)
     {
-        parse_state old_state = _state;
-
-        switch (_state)
+    case START_LINE:
+        if (!_isCGIResponse)
         {
-        case START_LINE:
-            if (!_isCGIResponse)
-            {
-                _parseStartLine();
-                break;
-            }
-        /* fall through */
-        case HEADERS: _parseHeaders(); break;
-        case BODY: _parseBody(); break;
-        case CHUNK_SIZE: _parseChunkedSize(); break;
-        case CHUNK_DATA: _parseChunkedSegment(); break;
-        case COMPLETE: case ERROR: break;
+            _parseStartLine();
+             break;
         }
-
-        made_progress = (_state != old_state);
-        if (_buffOffset * 2 >= BUFF_SIZE)
-        {
-            _buffer.erase(0, _buffOffset);
-            _buffOffset = 0;
-        }
+    /* fall through */
+    case HEADERS    : _parseHeaders(); break;
+    case BODY       : _parseBody(); break;
+    case CHUNK_SIZE : _parseChunkedSize(); break;
+    case CHUNK_DATA : _parseChunkedSegment(); break;
+    default: break;
     }
+
+    if (_state >= BODY)
+        _bodySize += _buffOffset - old_offset;
+    if (_buffOffset * 2 >= BUFF_SIZE)
+    {
+        _buffer.erase(0, _buffOffset);
+        _buffOffset = 0;
+    }
+    if (old_state != _state)
+        goto label;
 }       
 void    HTTPParser::_parseStartLine()
 {
@@ -140,6 +162,9 @@ void    HTTPParser::_parseStartLine()
     if (_state == ERROR)
         return;
 
+    _decodeURI();
+    if (_state == ERROR)
+        return;
     size_t fragm = _uri.find('#');
     if (fragm != NPOS)
     {
@@ -179,23 +204,24 @@ void    HTTPParser::_parseHeaders()
             // Check if we need to parse body based on content length
             strmap::iterator it = _headers.find("content-length");
             strmap::iterator it2 = _headers.find("transfer-encoding");
-            if (it != _headers.end() && it2 == _headers.end()) // prioritize chunked over con-lenth
+            if (it2 != _headers.end())
+            {
+                std::string& enc = it2->second;
+                std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
+                _state = (it2->second == "chunked" ? CHUNK_SIZE : ERROR);
+                _isChunked = (_state == CHUNK_SIZE);
+            }
+            else if (it != _headers.end()) // prioritize chunked over con-lenth
             {
                 char*   ptr = NULL;
                 _contentLength = std::strtol(it->second.data(), &ptr, 10);
                 _state = (*ptr ? ERROR : BODY);
                 if (_state == ERROR) return;
-            }
-            else if (it2 != _headers.end())
-            {
-                std::string& enc = it2->second;
-                std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
-                _state = (it2->second == "chunked" ? CHUNK_SIZE : ERROR);
-                _isChunked = true;
+                _state = (_contentLength == 0) ? COMPLETE : BODY;
             }
             else
-                _state = COMPLETE;
-            return;
+                _state = _isCGIResponse ? BODY : COMPLETE;
+            break;
         }
 
         // Find the first colon only
@@ -223,12 +249,26 @@ void    HTTPParser::_parseHeaders()
         _headers[key] = value;
         _buffOffset = idx + 2;
     }
+    // why is this 
+    std::string& cont_type = getHeader("content-type");
+    if (cont_type.find("multipart/form-data") != NPOS)
+    {
+        _isMultiPart = true;
+        size_t pos = cont_type.find("boundary=");
+        _boundary = cont_type.substr(pos + 9);
+        _MultiParser.setBoundry(_boundary);
+    }
 }
 void    HTTPParser::_parseBody()
 {
     if (_buffer.empty() || _buffOffset >= _buffer.size())
         return;
-        
+    if (_isCGIResponse)
+    {
+        _body.write(_buffer.data() + _buffOffset, _buffer.size() - _buffOffset);
+        return;
+    }
+
     size_t available = _buffer.size() - _buffOffset;
     size_t needed = _contentLength - _bytesRead;
     size_t to_read = std::min(available, needed);
@@ -236,7 +276,7 @@ void    HTTPParser::_parseBody()
     if (_bodyHandler)
         _bodyHandler(_buffer.data() + _buffOffset, to_read, _data);
     else
-        _body.append(_buffer.data() + _buffOffset, to_read);
+        _body.write(_buffer.data() + _buffOffset, to_read);
     _bytesRead += to_read;
     _buffOffset += to_read;
     
@@ -291,7 +331,7 @@ void    HTTPParser::_parseChunkedSegment()
         if (_bodyHandler)
             _bodyHandler(_buffer.data() + _buffOffset, to_read, _data);
         else
-            _body.append(_buffer.data() + _buffOffset, to_read);
+            _body.write(_buffer.data() + _buffOffset, to_read);
         _readChunkSize += to_read;
         _buffOffset += to_read;
     }
@@ -314,4 +354,38 @@ void    HTTPParser::setBodyHandler(bodyHandler bh, void *data)
 {
     _bodyHandler = bh;
     _data = data;
+}
+void    HTTPParser::setUploadDir(const std::string& dir) { _MultiParser.setUploadPath(dir); }
+
+void    HTTPParser::_decodeURI()
+{
+    std::string tmp;
+    long        nbr;
+
+    for (size_t i = 0; i < _uri.size(); ++i)
+    {
+        if (_uri[i] != '%')
+            continue;
+        // '/%A' means a bad request
+        if (i + 2 >= _uri.size())
+        {
+            _state = ERROR;
+            return;
+        }
+        tmp = _uri.substr(i + 1, 2);
+        nbr = std::strtol(tmp.c_str(), NULL, 16);
+        if (!isascii(nbr))
+        {
+            _state = ERROR;
+            return;
+        }
+        tmp = nbr;
+        _uri.replace(i, 3, tmp);
+    }
+}
+
+void    HTTPParser::parseMultipart()
+{
+    if (_isMultiPart)
+        _MultiParser.parse();
 }
