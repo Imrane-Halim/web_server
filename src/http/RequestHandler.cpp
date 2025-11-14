@@ -336,8 +336,6 @@ std::string RequestHandler::_getDictListing(const std::string& path)
     html += "<div class=\"info-title\">System Path</div>\n";
     html += "<div class=\"server-info\">" + path + "</div>\n";
     html += "</div>\n";
-    html += "</div>\n";
-    html += "</div>\n";
     html += "</header>\n";
     html += "<div class=\"section\">\n";
     html += "<div class=\"section-title\">Contents</div>\n";
@@ -411,8 +409,7 @@ std::string RequestHandler::_getDictListing(const std::string& path)
         html += "</tr>\n";
     }
 
-    html += "</tbody>\n</table>\n";
-    html += "</body>\n</html>";
+    html += "</table>\n</div>\n</div>\n</body>\n</html>";
 
     return html;
 }
