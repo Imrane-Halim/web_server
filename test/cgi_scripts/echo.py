@@ -19,51 +19,27 @@ print("""<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CGI Echo Test</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
             padding: 40px 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
+        }
+        header {
             background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 48px;
-        }
-        h1 {
-            color: #1a1a1a;
+            border-radius: 4px;
+            padding: 30px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             margin-bottom: 32px;
-            font-size: 28px;
-            font-weight: 600;
-        }
-        .section {
-            margin-bottom: 32px;
-        }
-        .section-title {
-            color: #404040;
-            font-weight: 500;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-        }
-        .info-box {
-            background: #fafafa;
-            border: 1px solid #e5e5e5;
-            border-radius: 6px;
-            padding: 16px;
-            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
-            font-size: 13px;
-            color: #404040;
-            line-height: 1.5;
-            overflow-x: auto;
-        }
-        .empty-state {
-            color: #737373;
-            font-style: italic;
         }
         .status {
             display: inline-flex;
@@ -72,10 +48,12 @@ print("""<!DOCTYPE html>
             background: #f0fdf4;
             color: #166534;
             border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 3px;
+            font-size: 12px;
             font-weight: 500;
-            margin-bottom: 32px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
         .status::before {
             content: "";
@@ -84,13 +62,63 @@ print("""<!DOCTYPE html>
             background: #22c55e;
             border-radius: 50%;
             margin-right: 8px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        h1 {
+            color: #1a1a1a;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        .section {
+            background: white;
+            border-radius: 4px;
+            padding: 32px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #404040;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        .info-box {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 3px;
+            padding: 20px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            color: #1a1a1a;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+        .empty-state {
+            color: #737373;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="status">Request Received</div>
-        <h1>CGI Echo Test</h1>""")
+        <header>
+            <div class="status">Request Received</div>
+            <h1>CGI Echo Test</h1>
+        </header>""")
 
 # Display environment variables
 print("""        <div class="section">
@@ -122,11 +150,6 @@ else:
 
 print("""            </div>
         </div>""")
-
-# ----------------------------------
-
-# ----------------------------------
-
 
 # Display query string
 print("""        <div class="section">
