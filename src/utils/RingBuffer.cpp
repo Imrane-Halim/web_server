@@ -14,12 +14,9 @@ RingBuffer::RingBuffer(size_t size):
 size_t  RingBuffer::getCapacity() const { return _capacity; }
 
 size_t  RingBuffer::getSize() const { return _size; }
-#include "Logger.hpp"
+
 void    RingBuffer::clear()
 {
-    //::bzero(_buff.data(), _capacity);
-    //Logger logger;
-    //logger.debug(_buff.data());
     _head = 0;
     _tail = 0;
     _size = 0;
@@ -100,18 +97,6 @@ void    RingBuffer::advanceRead(size_t size)
 {
     _tail = (_tail + size) % _capacity;
     _size -= size <= _capacity ? size : _size;
-}
-
-void    RingBuffer::advanceWrite(size_t size)
-{
-    _head = (_head + size) % _capacity;
-    _size += size;
-    if (_size > _capacity)
-    {
-        size_t overflow = _size - _capacity;
-        _tail = (_tail + overflow) % _capacity;
-        _size = _capacity;
-    }
 }
 
 // int main()

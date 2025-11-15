@@ -26,7 +26,6 @@ public:
     bool    isFull(void) const;
     bool    isEmpty(void) const;
 
-    void    advanceWrite(size_t size);
     void    advanceRead(size_t size);
 
     void    clear(void);
