@@ -21,7 +21,7 @@
 class HTTPResponse
 {
     std::string _version;
-    RingBuffer  _response;   // headers + optional small body
+    Buffer  _response;   // headers + optional small body
 
     int     _file_fd;       // file descriptor (if serving file)
     size_t  _file_size;     // total file size

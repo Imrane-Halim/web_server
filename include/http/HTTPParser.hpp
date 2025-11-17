@@ -66,7 +66,7 @@ class HTTPParser
     strmap      _headers;
 
     // the requst body (default for now)
-    RingBuffer  _body;
+    Buffer  _body;
     size_t      _contentLength;
     size_t      _bytesRead;
 
@@ -128,7 +128,7 @@ public:
     bool            isComplete();
     bool            isError();
 
-    RingBuffer& getBody(void);
+    Buffer& getBody(void);
     size_t      getBodySize(void);
 
     void    reset();  // To reuse object for keep-alive connections

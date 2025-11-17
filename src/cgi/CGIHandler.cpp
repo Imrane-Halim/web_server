@@ -128,7 +128,7 @@ void CGIHandler::onReadable()
 	if (_cgiParser.getState() >= BODY)
 	{
 		// _response.feedRAW("this is a test");
-		RingBuffer& body = _cgiParser.getBody();
+		Buffer& body = _cgiParser.getBody();
 		size_t bodySize = body.read(buffer, sizeof(buffer));
 		
 		if (bodySize > 0)
@@ -150,7 +150,7 @@ void CGIHandler::onWritable()
 		return;
 	}
 
-	RingBuffer& body = _Reqparser.getBody();
+	Buffer& body = _Reqparser.getBody();
 	size_t available = body.getSize();
 
 	if (available == 0)
@@ -465,7 +465,7 @@ void CGIHandler::start(const RouteMatch &match)
 		_outputPipe.closeWrite();
 
 		// Register pipes with epoll
-		RingBuffer body = _Reqparser.getBody();
+		Buffer body = _Reqparser.getBody();
 		_expiresAt = time(NULL) + match.location->cgi_timeout;
 		if (_needBody && body.getSize() > 0)
 		{

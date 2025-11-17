@@ -30,7 +30,7 @@ public:
         std::string filename;
 
         // just normal forms
-        RingBuffer body;
+        Buffer body;
 
         // file stuff
         std::string     filePath;
@@ -50,7 +50,7 @@ private:
     std::string     _str_boundry;
     std::string     _uploadDict;
 
-    RingBuffer&     _buff;
+    Buffer&     _buff;
     std::ofstream   _outfile;
 
     parts_t     _parts; // a vector of paths
@@ -71,7 +71,7 @@ private:
 
 public:
     // i will inject the buffer
-    Multipart(RingBuffer& body);
+    Multipart(Buffer& body);
     ~Multipart();
     
     void    setUploadPath(const std::string& path);

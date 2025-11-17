@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdio>
 
-Multipart::Multipart(RingBuffer& body):
+Multipart::Multipart(Buffer& body):
     _state(ST_SEEKBOUND),
     _buff(body)
 { }

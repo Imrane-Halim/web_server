@@ -2,133 +2,79 @@
 #include <iostream>
 #include <algorithm>
 
-RingBuffer::RingBuffer(size_t size):
-    _head(0),
-    _tail(0),
-    _capacity(size),
-    _size(0)
+/*
+    _buff [....................]
+              |              |
+            start           end
+    capacity = 20
+    size     = end - start;
+*/
+
+Buffer::Buffer(size_t size):
+    _buff(size, 0),
+    _start(0),
+    _end(0),
+    _capacity(size)
 {
-    _buff.reserve(size);
 }
 
-size_t  RingBuffer::getCapacity() const { return _capacity; }
+size_t  Buffer::getCapacity(void) const { return _capacity; }
+size_t  Buffer::getSize(void) const { return _end - _start; }
 
-size_t  RingBuffer::getSize() const { return _size; }
-#include "Logger.hpp"
-void    RingBuffer::clear()
+void    Buffer::clear()
 {
-    //::bzero(_buff.data(), _capacity);
-    //Logger logger;
-    //logger.debug(_buff.data());
-    _head = 0;
-    _tail = 0;
-    _size = 0;
+    _start = 0;
+    _end = 0;
 }
 
-size_t  RingBuffer::write(const char *buff, size_t size)
+size_t  Buffer::write(const char *buff, size_t size)
 {
-    if (!size) return 0;
-
-    size_t offset = 0;
-    size_t toWrite = size;
-    if (toWrite > _capacity) // just in case size > _capacity
-    {
-        offset = size - _capacity;
-        toWrite = _capacity;
-    }
-
-    if (_head + toWrite <= _capacity)
-        std::memcpy(&_buff[_head], buff + offset, toWrite);
-    else
-    {
-        size_t chunk = _capacity - _head;
-        std::memcpy(&_buff[_head], buff + offset, chunk);
-        std::memcpy(&_buff[0], buff + offset + chunk, toWrite - chunk);
-    }
-
-    _head = (_head + toWrite) % _capacity;
-    _size += toWrite;
-    if (_size > _capacity)
-    {
-        size_t overflow = _size - _capacity;
-        _tail = (_tail + overflow) % _capacity;
-        _size = _capacity;
-    }
-    return size;
+    if (!buff || !size || !_capacity)
+        return 0;
+    if (isFull()) clear();
+    size_t toWrite = (_end + size <= _capacity ? size : _capacity - _end);
+    std::memcpy((char*)_buff.data() + _end, buff, toWrite);
+    _end += toWrite;
+    return toWrite;
 }
-size_t  RingBuffer::read(char *buff, size_t size)
+size_t  Buffer::read(char *buff, size_t size)
 {
-    // read only what's available
-    size_t toRead = (size < _size) ? size : _size;
-    if (!toRead) return 0;
-
-    if (_tail + toRead <= _capacity)
-        std::memcpy(buff, &_buff[_tail], toRead);
-    else
-    {
-        size_t chunk = _capacity - _tail;
-        std::memcpy(buff, &_buff[_tail], chunk);
-        std::memcpy(buff + chunk, &_buff[0], toRead - chunk);
-    }
-
-    _tail = (_tail + toRead) % _capacity;
-    _size -= toRead;
-    return toRead;
+    size_t read = peek(buff, size);
+    _start += read;
+    return read;
 }
-size_t  RingBuffer::peek(char *buff, size_t size)
+size_t  Buffer::peek(char *buff, size_t size)
 {
-    // read only what's available
-    size_t toRead = (size < _size) ? size : _size;
-    if (!toRead) return 0;
-
-    if (_tail + toRead <= _capacity)
-        std::memcpy(buff, &_buff[_tail], toRead);
-    else
-    {
-        size_t chunk = _capacity - _tail;
-        std::memcpy(buff, &_buff[_tail], chunk);
-        std::memcpy(buff + chunk, &_buff[0], toRead - chunk);
-    }
-
+    if (!buff || !size || !_capacity)
+        return 0;
+    size_t toRead = (_end - _start <= size ? _end - _start : size);
+    std::memcpy(buff, _buff.data() + _start, toRead);
     return toRead;
 }
 
-bool    RingBuffer::isFull() const { return _size == _capacity; }
-bool    RingBuffer::isEmpty() const { return !_size; }
+bool    Buffer::isFull() const { return _end - _start == _capacity; }
+bool    Buffer::isEmpty() const { return !(_end - _start); }
 
-void    RingBuffer::advanceRead(size_t size)
+void    Buffer::advanceRead(size_t size)
 {
-    _tail = (_tail + size) % _capacity;
-    _size -= size <= _capacity ? size : _size;
-}
-
-void    RingBuffer::advanceWrite(size_t size)
-{
-    _head = (_head + size) % _capacity;
-    _size += size;
-    if (_size > _capacity)
-    {
-        size_t overflow = _size - _capacity;
-        _tail = (_tail + overflow) % _capacity;
-        _size = _capacity;
-    }
+    _start += std::min(size, getSize());
 }
 
 // int main()
 // {
-//     RingBuffer buff(5);
+//     Buffer buff(5);
+//     std::string test = "123456789";
+//     char tmp[10];
 
-//     char test[] = "1234567"; // size = 7
-//     buff.write(test, strlen(test));
+//     size_t written = buff.write(test.c_str(), test.size());
+//     size_t s = buff.peek(tmp, sizeof(tmp));
+//     buff.advanceRead(s);
 
-//     char test1[] = "xx"; // size = 20
-//     buff.write(test1, strlen(test1));
-
-//     char holder[10];
-//     size_t read_count = buff.read(holder, 10);
-
-//     std::cout.write(holder, read_count);
+//     std::cout << "bytes written: " << written << std::endl;
+//     std::cout << "bytes read   : " << s << std::endl;
+//     std::cout.write(tmp, s);
 //     std::cout << std::endl;
+//     std::cout << "bytes left: " << buff.getSize() << std::endl;
 
 //     return 0;
 // }

@@ -30,7 +30,7 @@ std::string&    HTTPParser::getFragment(void) { return _fragment; }
 strmap&         HTTPParser::getHeaders(void) { return _headers; }
 std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[key]; }
 
-RingBuffer&     HTTPParser::getBody(void) { return _body; }
+Buffer&     HTTPParser::getBody(void) { return _body; }
 size_t          HTTPParser::getBodySize(void) { return _bodySize; }
 
 parse_state     HTTPParser::getState(void) { return _state; }
