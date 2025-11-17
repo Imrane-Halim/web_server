@@ -26,10 +26,8 @@ Client::~Client()
 int Client::get_fd() const { return _socket.get_fd(); }
 
 
-/*--------------------------------------------------------*/
 void Client::onEvent(uint32_t events)
 {
-    //logger.debug("Event on client fd: " + _strFD + " events: " + intToString(events));
     _updateExpiresAt(time(NULL) + DEFAULT_CLIENT_TIMEOUT);
     if (IS_ERROR_EVENT(events)) {
         onError();
@@ -76,11 +74,9 @@ void    Client::onWritable()
     default: break;
     }
 }
-/*--------------------------------------------------------*/
 
 bool Client::_readData()
 {
-    // we can process the request even if it is not complete
     if (_state != ST_READING && _state != ST_PROCESSING)
         return false;
 
@@ -108,8 +104,6 @@ bool Client::_readData()
     }
     if (_handler.isReqHeaderComplete())
     {
-        // after parsing the header,
-        // we decide what to do with the body if any
         logger.info("request processing started: " + _strFD);
         _state = ST_PROCESSING;
         return false;
@@ -123,9 +117,6 @@ bool Client::_sendData()
         return false;
 
     ssize_t toSend = _handler.readNextChunk(_sendBuff, BUFF_SIZE);
-    logger.debug("--------------------------------------------");
-    logger.debug(_sendBuff);
-    logger.debug("--------------------------------------------");
 
     if (toSend < 0)
     {
@@ -135,20 +126,16 @@ bool Client::_sendData()
     }
     if (toSend == 0)
     {
-        // Only consider response complete if handler confirms it
         if (_handler.isResComplete())
         {
             logger.debug("Client send response complete fd: " + _strFD);
             _state = ST_SENDCOMPLETE;
             return false;
         }
-        // No data available yet, but response not complete (e.g., waiting for CGI)
         return true;
     }
     _handler.responseStarted = true;
     ssize_t sent = _socket.send(_sendBuff, toSend, 0);
-    //logger.debug("Sending " + intToString(toSend) + " bytes to client fd: " + _strFD);
-    //logger.debug(_sendBuff);
     if (sent < 0)
     {
         logger.error("Can't send data on client fd: " + _strFD);
@@ -217,7 +204,6 @@ int Client::get_fd()
 
 void Client::destroy()
 {
-    logger.debug("Client::destroy() called for fd: " + _strFD);
     delete this;
 }
 

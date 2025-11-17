@@ -3,27 +3,22 @@
 void CGIHandler::onEvent(uint32_t events)
 {
 	Logger logger;
-	logger.debug("CGIHandler::onEvent called with events: " + intToString(events));
 	_updateExpiresAt(time(NULL) + _match.location->cgi_timeout);
 	if (IS_ERROR_EVENT(events))
 	{
-		logger.debug("CGIHandler: Error event received");
 		onError();
 		return;
 	}
 	if (IS_READ_EVENT(events))
 	{
-		logger.debug("CGIHandler: Read event received");
 		onReadable();
 	}
 	if (IS_WRITE_EVENT(events))
 	{
-		logger.debug("CGIHandler: Write event received");
 		onWritable();
 	}
 	if (IS_TIMEOUT_EVENT(events))
 	{
-		logger.debug("CGIHandler: Timeout event received");
 		onTimeout();
 	}
 }
@@ -31,13 +26,10 @@ void CGIHandler::onEvent(uint32_t events)
 void CGIHandler::onReadable()
 {
 	Logger logger;
-	logger.debug("CGIHandler::onReadable() called");
 	
 	char buffer[BUFFER_SIZE];
 	ssize_t bytesRead = _outputPipe.read(buffer, BUFFER_SIZE);
 
-	logger.debug("CGI read " + intToString(bytesRead) + " bytes");
-	logger.debug(buffer);
 	if (bytesRead < 0)
 	{
 		logger.error("CGI read error");
@@ -47,7 +39,6 @@ void CGIHandler::onReadable()
 
 	if (bytesRead == 0)
 	{
-		logger.debug("CGIHandler::onReadable() - EOF reached");
 		_fd_manager.detachFd(_outputPipe.read_fd());
 		_outputPipe.closeRead();
 
@@ -78,7 +69,6 @@ void CGIHandler::onReadable()
 
 	if (_ShouldAddSLine && _cgiParser.getState() >= BODY)
 	{
-		logger.debug("CGI headers parsed, building HTTP response");
 		
 		int statusCode = 200;
 		std::string cgiStatus = _cgiParser.getHeader("status");
@@ -213,7 +203,6 @@ void CGIHandler::initArgv(RouteMatch const &match)
 		_argv.push_back(const_cast<char *>(_interpreterPath.c_str()));
 	}
 	Logger logger;
-	logger.debug("CGI interpreter path set to: " + _interpreterPath);
 	_scriptPath = match.scriptPath;
 	_argv.push_back(const_cast<char *>(_scriptPath.c_str()));
 	_argv.push_back(NULL);
