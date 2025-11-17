@@ -32,6 +32,7 @@ std::string&    HTTPParser::getHeader(const std::string& key) { return _headers[
 
 RingBuffer&     HTTPParser::getBody(void) { return _body; }
 size_t          HTTPParser::getBodySize(void) { return _bodySize; }
+bool            HTTPParser::hasBody(void) { return _contentLength || _isChunked; }
 
 parse_state     HTTPParser::getState(void) { return _state; }
 bool    HTTPParser::isComplete(void)
