@@ -36,7 +36,7 @@ bool    HTTPResponse::attachFile(const std::string& filepath) {
     struct stat f;
     if (stat(filepath.c_str(), &f) != 0)
         return false;
-    
+
     _file_fd = open(filepath.c_str(), O_RDONLY | O_NONBLOCK);
     if (_file_fd == -1)
         return false;
@@ -45,7 +45,7 @@ bool    HTTPResponse::attachFile(const std::string& filepath) {
     addHeader("Content-type", _getContentType(filepath));
     addHeader("Content-Length", SSTR(_file_size));
     endHeaders();
-    
+
     return true;
 }
 void    HTTPResponse::closeFile()
@@ -61,7 +61,7 @@ void    HTTPResponse::closeFile()
 
 ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
 {
-    if (size == 0 || !buff) 
+    if (size == 0 || !buff)
         return 0;
 
     // Send from the in-memory response buffer first
@@ -119,9 +119,9 @@ const std::string HTTPResponse::_getContentType(const std::string &filepath)
     size_t dotPos = filepath.rfind('.');
     if (dotPos == std::string::npos)
         return "application/octet-stream";
-    
+
     const std::string& ext = filepath.substr(dotPos);
-    
+
     // Text types
     if (ext == ".html" || ext == ".htm") return "text/html";
     if (ext == ".css")  return "text/css";
@@ -129,7 +129,7 @@ const std::string HTTPResponse::_getContentType(const std::string &filepath)
     if (ext == ".json") return "application/json";
     if (ext == ".xml")  return "application/xml";
     if (ext == ".txt")  return "text/plain";
-    
+
     // Image types
     if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
     if (ext == ".png")  return "image/png";
@@ -137,17 +137,17 @@ const std::string HTTPResponse::_getContentType(const std::string &filepath)
     if (ext == ".svg")  return "image/svg+xml";
     if (ext == ".ico")  return "image/x-icon";
     if (ext == ".webp") return "image/webp";
-    
+
     // Font types
     if (ext == ".woff")  return "font/woff";
     if (ext == ".woff2") return "font/woff2";
     if (ext == ".ttf") return "font/ttf";
     if (ext == ".otf") return "font/otf";
-    
+
     // Other
     if (ext == ".pdf") return "application/pdf";
     if (ext == ".zip") return "application/zip";
-    
+
     return "application/octet-stream";
 }
 const std::string HTTPResponse::_getStatus(int code)
@@ -240,15 +240,12 @@ void    HTTPResponse::feedRAW(const char* data, size_t size)
     _response.write(CRLF, 2);
 
     _response.write(data, size);
-    
-    _response.write(CRLF, 2); 
+
+    _response.write(CRLF, 2);
 
     Logger logger;
     char buffer[5000];
     _response.peek(buffer, sizeof(buffer));
-    logger.debug("/////////////////////////////////////////");
-    logger.debug(buffer);
-    logger.debug("/////////////////////////////////////////");
 
 }
 void    HTTPResponse::feedRAW(const std::string& data)
