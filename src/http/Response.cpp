@@ -60,13 +60,16 @@ void    HTTPResponse::closeFile()
 
 ssize_t HTTPResponse::readNextChunk(char* buff, size_t size)
 {
-    if (size == 0 || !buff) 
+    if (!size || !buff) 
         return 0;
 
     // Send from the in-memory response buffer first
     size_t toSend = _response.read(buff, size);
     if (toSend)
         return toSend;
+
+    if (_file_fd == -1)
+        return 0;
 
     // If the entire file has been sent, we're done
     if (_bytes_sent >= _file_size)
