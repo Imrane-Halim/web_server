@@ -188,7 +188,7 @@ void    RequestHandler::_handlePOST(const RouteMatch& match)
         _request.forceError();
         return;
     }
-    if (match.isUploadAllowed())
+    if (match.isUploadAllowed() && _request.isMultiPart())
     {
         if (!_isDirSet)
         {

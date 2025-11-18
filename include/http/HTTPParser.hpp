@@ -127,6 +127,7 @@ public:
     parse_state     getState();
     bool            isComplete();
     bool            isError();
+    bool            isMultiPart();
 
     RingBuffer& getBody(void);
     bool        hasBody(void);

@@ -400,3 +400,5 @@ void    HTTPParser::parseMultipart()
     if (_isMultiPart)
         _MultiParser.parse();
 }
+
+bool    HTTPParser::isMultiPart() { return _isMultiPart; }
