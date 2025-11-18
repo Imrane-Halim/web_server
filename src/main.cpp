@@ -1,19 +1,5 @@
-#include <iostream>
 #include <csignal>
-#include <exception>
-#include "ConfigParser.hpp"
-#include "Routing.hpp"
-#include "HTTPParser.hpp"
-#include "Response.hpp"
-#include "../include/utils/Logger.hpp"
-#include "Epoll.hpp"
-#include "Socket.hpp"
-#include "Client.hpp"
-#include "../utils/Logger.hpp"
-#include "FdManager.hpp"
-#include <map>
-#include <iostream>
-#include <csignal>
+
 #include "EventLoop.hpp"
 #include "Server.hpp"
 
@@ -23,11 +9,10 @@ volatile sig_atomic_t g_shutdown = 0;
 
 void signal_handler(int signal)
 {
-    if (signal == SIGINT || signal == SIGTERM)
-    {
-        std::cout << "\nReceived shutdown signal. Stopping server..." << std::endl;
-        g_shutdown = 1;
-    }
+    if (signal != SIGINT && signal != SIGTERM)
+        return;
+    std::cout << "\nReceived shutdown signal. Stopping server..." << std::endl;
+    g_shutdown = 1;
 }
 
 void setup_signal_handlers()
@@ -38,14 +23,10 @@ void setup_signal_handlers()
     sa.sa_flags = 0;
 
     if (sigaction(SIGINT, &sa, NULL) == -1)
-    {
         throw std::runtime_error("Failed to setup SIGINT handler");
-    }
 
     if (sigaction(SIGTERM, &sa, NULL) == -1)
-    {
         throw std::runtime_error("Failed to setup SIGTERM handler");
-    }
 
     signal(SIGPIPE, SIG_IGN);
 }
