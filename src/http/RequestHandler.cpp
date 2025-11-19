@@ -118,12 +118,27 @@ bool    RequestHandler::processRequest()
     return _request.isComplete();
 }
 
-void    RequestHandler::_common(const RouteMatch& match)
+void    RequestHandler::_common(RouteMatch& match)
 {
-    // 1. Check redirects
-    // 2. Check if path exists (404 if not)
-    // 3. If directory: call _servDict
-    // 4. If file: serve it
+    std::string& expectedUri = match.normURI;
+    if (expectedUri.empty() || expectedUri[0] != '/')
+        expectedUri.insert(0, 1, '/');
+
+    if (match.isDirectory && expectedUri[expectedUri.size() - 1] != '/')
+        expectedUri += '/';
+
+    if (_request.getUri() != expectedUri)
+    {
+        std::string cleanUri = expectedUri;
+        const std::string& query = _request.getQuery();
+        if (!query.empty()) cleanUri += '?' + query;
+        _response.startLine(301);
+        _response.addHeader("location", cleanUri);
+        _response.addHeader("content-length", "0");
+        _response.endHeaders();
+        logger.debug("Redirecting from '" + _request.getUri() + "' to '" + cleanUri + "'");
+        return;
+    }
 
     if (match.isRedirect)
     {
@@ -141,16 +156,6 @@ void    RequestHandler::_common(const RouteMatch& match)
     }
     if (match.isDirectory)
     {
-        const std::string& uri = _request.getUri();
-        if (uri.empty() || uri[uri.length() - 1] != '/')
-        {
-            std::string redirectUri = uri + '/';
-            _response.startLine(301);
-            _response.addHeader("location", redirectUri);
-            _response.addHeader("content-length", "0");
-            _response.endHeaders();
-            return;
-        }
         _serveDict(match);
         return;
     }

@@ -10,6 +10,7 @@ struct RouteMatch
     Location *location;
     bool isMatched;
     bool methodAllowed;
+    std::string normURI;
 
     std::string fsPath;
     std::string scriptPath;

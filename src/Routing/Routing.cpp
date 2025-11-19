@@ -42,6 +42,7 @@ RouteMatch Routing::match(const string &path, const string &method)
         return (result);
 
     result.fsPath = _resolvePath(*loc, path);
+    result.normURI = _cleanPath(path);
 
     result.isCGI = _isCGI(*loc);
     result.isRedirect = !loc->redirect.empty();
