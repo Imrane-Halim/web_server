@@ -149,7 +149,6 @@ const std::string HTTPResponse::_getContentType(const std::string &filepath)
     // Other
     if (ext == ".pdf") return "application/pdf";
     if (ext == ".zip") return "application/zip";
-    if (ext == ".mp4") return "video/mp4";
     
     return "application/octet-stream";
 }
