@@ -118,9 +118,9 @@ bool    RequestHandler::processRequest()
     return _request.isComplete();
 }
 
-void    RequestHandler::_common(RouteMatch& match)
+void RequestHandler::_common(const RouteMatch& match)
 {
-    std::string& expectedUri = match.normURI;
+    std::string expectedUri = match.normURI;
     if (expectedUri.empty() || expectedUri[0] != '/')
         expectedUri.insert(0, 1, '/');
 
