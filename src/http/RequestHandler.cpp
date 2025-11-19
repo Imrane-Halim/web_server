@@ -144,6 +144,7 @@ void RequestHandler::_common(const RouteMatch& match)
     {
         _response.startLine(301);
         _response.addHeader("location", match.redirectUrl);
+        _response.addHeader("content-length", "0");
         _response.addHeader("Cache-Control", "no-cache");
         _response.endHeaders();
         return;
