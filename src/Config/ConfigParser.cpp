@@ -23,6 +23,7 @@ ServerConfig::ServerConfig()
     root = "/";
     indexFiles.push_back("index.html");
     maxBody = 10485760;
+    client_timeout = 60;
     errors[400] = getErrorPage(400);
     errors[403] = getErrorPage(403);
     errors[404] = getErrorPage(404);
@@ -57,6 +58,7 @@ Location::Location(ServerConfig server)
     autoindex = false;
     methods.push_back("GET");
     maxBody = server.maxBody;
+    client_timeout = server.client_timeout;
     indexFiles = server.indexFiles;
 }
 
@@ -305,6 +307,9 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
     else if (tokens.size() == 2 && tokens[0] == "client_max_body_size")
         locTmp.maxBody = myAtol(tokens[1], str, fname, lnNbr);
 
+    else if (tokens.size() == 2 && tokens[0] == "client_timeout")
+        locTmp.client_timeout = myAtol(tokens[1], str, fname, lnNbr);
+
     else if (tokens.size() == 2 && tokens[0] == "redirect")
         locTmp.redirect = tokens[1];
 
@@ -406,6 +411,9 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
 
     else if (tokens.size() == 2 && tokens[0] == "client_max_body_size")
         srvTmp.maxBody = myAtol(tokens[1], str, fname, lnNbr);
+
+    else if (tokens.size() == 2 && tokens[0] == "client_timeout")
+        srvTmp.client_timeout = myAtol(tokens[1], str, fname, lnNbr);
 
     else if (tokens[0] == "index")
     {

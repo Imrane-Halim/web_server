@@ -72,6 +72,7 @@ struct ServerConfig
     int port;                   ///< Server port number.
     string host;                ///< Server host address.
     size_t maxBody;             ///< Maximum allowed body size.
+    int client_timeout;         ///< Client timeout in seconds.
     string name;                ///< Server name.
     string root;                ///< Root directory.
     vector<string> indexFiles;  ///< Default index files.
@@ -96,6 +97,7 @@ struct Location
     string route;              ///< Route path for this location.
     string root;               ///< Root directory override.
     size_t maxBody;            ///< Maximum allowed body size for this location.
+    int client_timeout;        ///< Client timeout in seconds for this location.
     bool autoindex;            ///< Whether directory listing is enabled.
     string cgi;                ///< CGI script path.
     int cgi_timeout;           ///< Timeout for CGI execution.
