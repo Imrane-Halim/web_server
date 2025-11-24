@@ -12,14 +12,10 @@ RouteMatch::RouteMatch()
 {
 }
 
-
-
 bool RouteMatch::isValidMatch() const
 {
     return (isMatched && location != NULL);
 }
-
-
 
 bool RouteMatch::isUploadAllowed() const
 {
@@ -29,8 +25,6 @@ bool RouteMatch::isUploadAllowed() const
 Routing::Routing(ServerConfig &server) : _server(server)
 {
 }
-
-
 
 RouteMatch Routing::match(const string &path, const string &method)
 {
@@ -72,8 +66,6 @@ RouteMatch Routing::match(const string &path, const string &method)
     return (result);
 }
 
-
-
 string Routing::getErrorPage(int code)
 {
     if (_server.errors.find(code) != _server.errors.end())
@@ -81,8 +73,6 @@ string Routing::getErrorPage(int code)
 
     return ("");
 }
-
-
 
 string Routing::getAllowedMethodsStr(Location &loc)
 {
@@ -99,8 +89,6 @@ string Routing::getAllowedMethodsStr(Location &loc)
 
     return (res);
 }
-
-
 
 Location *Routing::_findLocation(const string &path)
 {
@@ -119,8 +107,6 @@ Location *Routing::_findLocation(const string &path)
     return (bestMatch);
 }
 
-
-
 bool Routing::_matchesRoute(const string &path, const string &route)
 {
     if (route == "/")
@@ -135,8 +121,6 @@ bool Routing::_matchesRoute(const string &path, const string &route)
     return (false);
 }
 
-
-
 string Routing::_resolvePath(Location &loc, const string &reqPath)
 {
     std::string root = _getRoot(loc);
@@ -144,8 +128,6 @@ string Routing::_resolvePath(Location &loc, const string &reqPath)
     std::string full = _joinPath(root, relative);
     return (_cleanPath(full));
 }
-
-
 
 string Routing::_cleanPath(const string &path)
 {
@@ -173,8 +155,6 @@ string Routing::_cleanPath(const string &path)
     return (normalized);
 }
 
-
-
 string Routing::_joinPath(const string &base, const string &path)
 {
     if (base.empty())
@@ -189,8 +169,6 @@ string Routing::_joinPath(const string &base, const string &path)
     return (base + (path[0] == '/' ? path : "/" + path));
 }
 
-
-
 string Routing::_getRelativePath(const string &path, const string &route)
 {
     if (path.compare(0, route.size(), route) == 0)
@@ -199,14 +177,10 @@ string Routing::_getRelativePath(const string &path, const string &route)
     return (path);
 }
 
-
-
 bool Routing::_isCGI(Location &loc)
 {
     return (!loc.cgi.empty());
 }
-
-
 
 void Routing::_splitCGIPath(const string &fsPath, string &scriptPath, string &pathInfo)
 {
@@ -222,8 +196,6 @@ void Routing::_splitCGIPath(const string &fsPath, string &scriptPath, string &pa
     pathInfo = fsPath.substr(tmp.length());
 }
 
-
-
 bool Routing::_isMethodAllowed(Location &loc, const string &method)
 {
     if (loc.methods.empty())
@@ -238,15 +210,11 @@ bool Routing::_isMethodAllowed(Location &loc, const string &method)
     return (false);
 }
 
-
-
 bool Routing::_isPathExists(const string &path)
 {
     struct stat st;
     return (stat(path.c_str(), &st) == 0);
 }
-
-
 
 bool Routing::_isDirectory(const string &path)
 {
@@ -254,29 +222,21 @@ bool Routing::_isDirectory(const string &path)
     return (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode));
 }
 
-
-
 bool Routing::_isFile(const string &path)
 {
     struct stat st;
     return (stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode));
 }
 
-
-
 string Routing::_getRoot(Location &loc)
 {
     return (loc.root.empty() ? _server.root : loc.root);
 }
 
-
-
 size_t Routing::_getMaxBodySize(Location &loc)
 {
     return (loc.maxBody ? loc.maxBody : _server.maxBody);
 }
-
-
 
 vector<string> Routing::_getIndexFiles(Location &loc)
 {

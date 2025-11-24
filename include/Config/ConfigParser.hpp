@@ -30,18 +30,12 @@ public:
 
     vector<ServerConfig> &getServers();
 
-
     ServerConfig getServer(const string &name);
-
 
     void addServer(const ServerConfig &server);
 
-
     ~WebConfigFile();
 };
-
-
-
 
 struct ServerConfig
 {
@@ -55,13 +49,8 @@ struct ServerConfig
     vector<Location> locations;
     map<int, string> errors;
 
-
     ServerConfig();
 };
-
-
-
-
 
 struct Location
 {
@@ -77,8 +66,6 @@ struct Location
     vector<string> indexFiles;
     vector<string> methods;
     string scriptInterpreter;
-
-
 
     Location(ServerConfig server);
 };

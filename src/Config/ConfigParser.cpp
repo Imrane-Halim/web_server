@@ -16,8 +16,6 @@ ServerConfig::ServerConfig()
     errors[500] = getErrorPage(500);
 }
 
-
-
 Location::Location(ServerConfig server)
 {
     route = "";
@@ -34,14 +32,10 @@ Location::Location(ServerConfig server)
     indexFiles = server.indexFiles;
 }
 
-
-
 vector<ServerConfig> &WebConfigFile::getServers()
 {
     return (_servers);
 }
-
-
 
 ServerConfig WebConfigFile::getServer(const string &name)
 {
@@ -54,14 +48,10 @@ ServerConfig WebConfigFile::getServer(const string &name)
     return (ServerConfig());
 }
 
-
-
 void WebConfigFile::addServer(const ServerConfig &server)
 {
     _servers.push_back(server);
 }
-
-
 
 string trim(const string &str)
 {
@@ -71,8 +61,6 @@ string trim(const string &str)
     size_t end = str.find_last_not_of(" \t\n\r");
     return (str.substr(start, end - start + 1));
 }
-
-
 
 string reduceSpaces(const string &str)
 {
@@ -104,8 +92,6 @@ string reduceSpaces(const string &str)
     return (result);
 }
 
-
-
 string removeComment(const string &str)
 {
     size_t pos = str.find('#');
@@ -113,8 +99,6 @@ string removeComment(const string &str)
         return (reduceSpaces(trim(str.substr(0, pos))));
     return (reduceSpaces(trim(str)));
 }
-
-
 
 vector<string> split(const string &str)
 {
@@ -148,16 +132,12 @@ vector<string> split(const string &str)
     return (tokens);
 }
 
-
-
 void throwSyntaxError(string &str, const string &fname, size_t &lnNbr)
 {
     ostringstream oss;
     oss << "Webserv: syntax error in " << fname << " at line " << lnNbr << " → " << str;
     throw(runtime_error(oss.str()));
 }
-
-
 
 size_t myAtol(string str, string &line, const string &fname, size_t &lnNbr)
 {
@@ -168,8 +148,6 @@ size_t myAtol(string str, string &line, const string &fname, size_t &lnNbr)
     }
     return (atol(str.c_str()));
 }
-
-
 
 short handleLocation(string str, vector<string> &tokens, Location &locTmp, const string &fname, size_t &lnNbr)
 {
@@ -250,8 +228,6 @@ short handleLocation(string str, vector<string> &tokens, Location &locTmp, const
     return (0);
 }
 
-
-
 short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, const string &fname, size_t &lnNbr)
 {
     if (tokens.size() < 2)
@@ -306,8 +282,6 @@ short handleServer(string str, vector<string> &tokens, ServerConfig &srvTmp, con
 
     return (0);
 }
-
-
 
 short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfigFile &config)
 {
@@ -375,8 +349,6 @@ short handleDirective(string &str, const string &fName, size_t &lnNbr, WebConfig
     return (0);
 }
 
-
-
 WebConfigFile::WebConfigFile(const string &fName)
 {
     _inputFile.open(fName.c_str());
@@ -400,15 +372,8 @@ WebConfigFile::WebConfigFile(const string &fName)
         throw runtime_error("Error: Configuration file is empty " + fName);
 }
 
-
-
 WebConfigFile::~WebConfigFile()
 {
     if (_inputFile.is_open())
         _inputFile.close();
 }
-
-
-
-
-
