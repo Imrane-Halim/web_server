@@ -76,183 +76,36 @@ Successfully converted the event loop implementation from Edge-Triggered (ET) to
 - Must write until EAGAIN
 - More complex error handling
 - Easier to introduce bugs
-- Requires careful errno checking
+# Level-triggered implementation — concise explanation
 
-## Implementation Details
+This repository uses level-triggered epoll notifications for clarity and reliability. This document summarizes the rationale and where to look in the codebase for the implementation.
 
-### Read Operation (Level-Triggered)
-```cpp
-ssize_t bytesRead = _socket.recv(_readBuffer, BUFF_SIZE - 1, 0);
+Why level-triggered (LT)?
+- Simpler read/write logic — kernel will keep reporting readiness until condition is cleared.
+- Lower chance of subtle bugs introduced by missing EAGAIN loops required by edge-triggered (ET).
+- Easier to debug and maintain during development.
 
-if (bytesRead < 0) {
-    // Real error - connection problem
-    _state = ERROR_STATE;
-    return false;
-}
+Where LT behavior is implemented
+- Client read/write handling: `src/server/Client.cpp` — onReadable/onWritable, partial write tracking.
+- Client registration: `src/server/Server.cpp` — register clients with `EPOLLIN` and switch to `EPOLLOUT` when sending.
+- Event dispatch and safety: `src/server/EventLoop.cpp` and `include/server/FdManager.hpp`.
 
-if (bytesRead == 0) {
-    // Connection closed
-    _state = CLOSED;
-    return false;
-}
+Implementation notes
+- The code treats recv/send returning negative values as real errors (in LT mode the kernel will re-notify when data is present again).
+- Partial writes are detected and tracked; remaining bytes are sent on the next EPOLLOUT notification.
+- Handlers validate existence through `FdManager::exists()` between events to avoid processing after deletion.
 
-// Process data
-// Will be called again by epoll if more data available
-```
+Trade-offs vs ET
+- ET can be more efficient under extreme loads (fewer syscalls) but requires reading/writing loops until EAGAIN and careful errno handling.
+- LT is slightly more syscall-heavy but safer and easier to reason about for a general-purpose HTTP server.
 
-### Write Operation (Level-Triggered)
-```cpp
-ssize_t bytesSent = _socket.send(buffer, bytesToSend, 0);
+Testing checklist
+- Verify basic requests (static files from `www/`).
+- Test large responses to exercise partial write logic.
+- Test CGI scripts under `test/cgi_scripts/`.
+- Verify graceful shutdown (send SIGINT and ensure cleanup).
 
-if (bytesSent < 0) {
-    // Real error
-    _state = ERROR_STATE;
-    return false;
-}
-
-if (bytesSent < bytesToSend) {
-    // Partial send - epoll will notify again when ready
-    return true;
-}
-
-// Check if complete...
-```
-
-### State Transitions
-```
-Client Registration: EPOLLIN (read mode)
-Request Complete: EPOLLOUT (write mode)
-Response Sent: EPOLLIN (read mode for keep-alive)
-              or CLOSED (connection close)
-```
-
-## Testing Recommendations
-
-### Basic Functionality
-```bash
-# Compile
-make re
-
-# Run server
-./webserv configs/config.conf
-
-# Test simple request
-curl http://localhost:8080/
-
-# Test keep-alive
-curl -H "Connection: keep-alive" http://localhost:8080/
-```
-
-### Load Testing
-```bash
-# Many concurrent connections
-ab -n 1000 -c 100 http://localhost:8080/
-
-# Keep-alive performance
-ab -n 1000 -c 100 -k http://localhost:8080/
-```
-
-### Error Conditions
-```bash
-# Partial writes (large response)
-curl http://localhost:8080/largefile
-
-# Client disconnect
-curl http://localhost:8080/ &
-PID=$!
-sleep 0.1
-kill -9 $PID
-
-# Malformed request
-echo "INVALID" | nc localhost 8080
-```
-
-## Performance Characteristics
-
-### Expected Behavior
-- **Throughput**: Same as ET mode for most workloads
-- **Latency**: Sub-millisecond for small responses
-- **CPU**: Slightly higher (more syscalls) but negligible
-- **Reliability**: Higher (won't miss events)
-- **Debuggability**: Much easier to trace issues
-
-### When LT is Perfect
-- ✅ Moderate connection counts (< 10,000)
-- ✅ Variable message sizes
-- ✅ Development and debugging
-- ✅ Production with reliability focus
-- ✅ HTTP servers (not ultra-high throughput proxies)
-
-### When to Consider ET
-- Very high connection counts (> 10,000)
-- Proxy/load balancer scenarios
-- Every microsecond matters
-- Team has extensive epoll experience
-
-## Bug Fixes Included
-
-1. **Fixed circular dependency**: EventHandler ↔ FdManager
-2. **Fixed multiple definition**: EventHandler constructor now inline
-3. **Fixed naming conflict**: Server (config) vs Server (event class)
-4. **Fixed initialization order**: _fd_manager before _config
-5. **Fixed missing include**: csignal for sig_atomic_t
-6. **Implemented missing method**: Client::get_fd()
-
-## Files Modified Summary
-
-```
-Modified:
-- src/server/Client.cpp (simplified I/O, removed errno checks)
-- src/server/Server.cpp (level-triggered registration)
-- src/server/EventLoop.cpp (added csignal, error-first processing)
-- include/server/EventHandler.hpp (inline constructor, forward declaration)
-- include/Routing/Routing.hpp (Server → ServerConfig)
-- src/Routing/Routing.cpp (Server → ServerConfig)
-- src/http/handleRequest.cpp (Server → ServerConfig)
-- docs/EVENT_LOOP_ARCHITECTURE.md (updated for LT mode)
-- docs/IMPLEMENTATION_SUMMARY.md (updated implementation details)
-
-Created:
-- src/server/Server.cpp (separated from header)
-```
-
-## Compilation Status
-
-✅ **Successfully compiles** with:
-- GCC/G++ with `-Wall -Wextra -Werror -std=c++98`
-- No warnings or errors
-- All dependencies resolved
-
-## Production Readiness
-
-✅ **Ready for deployment** with:
-- Robust error handling at all levels
-- Memory safety (proper cleanup, no leaks)
-- Signal-safe shutdown (SIGINT/SIGTERM)
-- SIGPIPE protection
-- Keep-alive support
-- Comprehensive logging
-- Exception safety
-- Level-triggered reliability
-
-## Next Steps (Optional Enhancements)
-
-1. **Connection timeouts**: Close idle connections
-2. **Rate limiting**: Protect against abuse
-3. **Metrics**: Request count, latency tracking
-4. **CGI integration**: Execute dynamic content
-5. **File uploads**: Handle multipart/form-data
-6. **Chunked transfer**: Support Transfer-Encoding: chunked
-7. **HTTP/1.1 pipelining**: Multiple requests per connection
-
-## Conclusion
-
-The event loop implementation now uses **Level-Triggered mode**, which provides:
-
-- **Simpler code** - easier to understand and maintain
-- **Higher reliability** - won't miss events
-- **Better debuggability** - clearer error conditions  
-- **Production ready** - proven epoll default behavior
-- **Good performance** - efficient for typical web server loads
-
-The implementation follows industry best practices and is suitable for production deployment at moderate to high loads.
+If you need higher-performance ET semantics later, the change points are:
+1. `src/server/Client.cpp` — implement read/write loops until EAGAIN.
+2. Registration flags — add `EPOLLET` during `FdManager::add`/`Server::accept`.
+3. Careful errno handling and more aggressive zero-copy I/O (optional).
