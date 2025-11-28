@@ -1,6 +1,6 @@
 # web_server
 
-- A small, POSIX-oriented HTTP web server written in modern C++ (epoll-based event loop). This project implements a minimal but featureful HTTP server with support for:
+- A small, POSIX-oriented HTTP web server written in C++98 (epoll-based event loop). This project implements a minimal but featureful HTTP server with support for:
 
 - Level-triggered epoll-based event loop and file descriptor management
 - HTTP parsing and response generation
@@ -15,7 +15,7 @@ This README explains how to build, run and extend the server. More design detail
 
 Requirements
 
-- A modern C++ toolchain (g++/clang++ supporting C++11 or later)
+- C++98 toolchain (g++/clang++)
 - make (a `Makefile` is included)
 - Linux (the server uses epoll)
 
